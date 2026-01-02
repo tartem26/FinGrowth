@@ -1,0 +1,13 @@
+{
+  "norm_method": "quantile_normal",
+  "reg_mode": "elasticnet",
+  "reg_params": {
+    "C": 1.0,
+    "l1_ratio": 0.5
+  },
+  "outlier_method": "iqr",
+  "feature_select_method": "entropy_selected",
+  "scaler_method": "none",
+  "standardization_method": "none",
+  "sampling_method": "none"
+}
