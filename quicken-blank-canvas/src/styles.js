@@ -31,21 +31,29 @@ function applyOpacityToHex(hex, opacity) {
 
 const styles = {
     root: {
+        position: 'fixed',
+        inset: 0,                 // top/right/bottom/left = 0
+        width: '100%',
         height: '100vh',
-        width: '100vw',
+        overflow: 'hidden',       // no page scrollbars
+        display: 'flex',
+        flexDirection: 'column',
         fontFamily: 'Roboto, Helvetica, Arial, sans-serif',
         fontWeight: 300,
+        boxSizing: 'border-box',
     },
     header: {
         width: '100%',
         height: 124,
-        background: 'linear-gradient(181deg, #3f87a6, #194f9c)',
         padding: '20px 48px 24px',
+        boxSizing: 'border-box',  // IMPORTANT: keeps header total height = 124
+        background: 'linear-gradient(181deg, #3f87a6, #194f9c)',
         display: 'flex',
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-end',
         color: greyScale[7],
+        flex: '0 0 auto',
     },
     ellipseText: {
         overflow: 'hidden',
@@ -100,12 +108,15 @@ const styles = {
     },
     column: {
         width: '100%',
-        margin: '12px 0 36px',
+        flex: '1 1 auto',         // fill remaining height under header
+        margin: 0,                // remove margin to avoid overflow
+        padding: '12px 0 36px',   // for spacing, padding not margin
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'scroll',
+        justifyContent: 'flex-start',
+        overflow: 'hidden',       // no scrollbars
+        boxSizing: 'border-box',
     },
     spacer: {
         margin: '12px 0',

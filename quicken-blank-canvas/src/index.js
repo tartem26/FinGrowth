@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useLayoutEffect } from "react";
 import ReactDOM from "react-dom";
 import styles from './styles.js';
 
@@ -23,6 +23,9 @@ const turtle = {
 const moveArray = ['shiftLeft', 'shiftRight', 'shiftUp', 'shiftDown'];
 
 function ReactRoot(){
+    const contentRef = useRef(null);
+    const [isOverflow, setIsOverflow] = useState(false);
+
     const [size, setSize] = useState('small');
 
     // turtle position
@@ -40,7 +43,7 @@ function ReactRoot(){
     const [hoverMenu, setHoverMenu] = useState(null); // null | 'koch' | 'hilbert'
 
     const drawKoch = (order = kochOrder, origin = kochOrigin) => {
-        clearCanvas();
+        // clearCanvas();
         turtle.kochSnowflake(Number(order), {
             origin,
             x: lastCursor.x,
@@ -49,13 +52,26 @@ function ReactRoot(){
     };
 
     const drawHilbert = (level = hilbertLevel, origin = hilbertOrigin) => {
-        clearCanvas();
+        // clearCanvas();
         turtle.hilbert(Number(level), {
             origin,
             x: lastCursor.x,
             y: lastCursor.y
         });
     };
+
+    useLayoutEffect(() => {
+        const check = () => {
+            const el = contentRef.current;
+            if (!el) return;
+            // true if content needs scrolling
+            setIsOverflow(el.scrollHeight > el.clientHeight + 1);
+        };
+
+        check();
+        window.addEventListener("resize", check);
+        return () => window.removeEventListener("resize", check);
+    }, [size]);
 
     setInterval(() => {
         setX(turtle.x);
@@ -94,7 +110,15 @@ function ReactRoot(){
                     </div>
                 </div>
             </div>
-            <div style={styles.column}>
+            <div
+                ref={contentRef}
+                style={{
+                    ...styles.column,
+                    overflowY: isOverflow ? "auto" : "hidden",
+                    overflowX: "hidden",
+                    paddingBottom: isOverflow ? 96 : 36,  // double padding when scrollbar
+                }}
+            >
                 <button
                     onClick={clearCanvas}
                     style={styles.button}
@@ -177,7 +201,7 @@ function ReactRoot(){
                                 borderRadius: 10,
                                 padding: 10,
                                 boxShadow: '0 6px 18px rgba(0,0,0,0.18)',
-                                zIndex: 10
+                                zIndex: 100
                             }}>
                                 <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>Start</div>
 
@@ -251,7 +275,7 @@ function ReactRoot(){
                                 borderRadius: 10,
                                 padding: 10,
                                 boxShadow: '0 6px 18px rgba(0,0,0,0.18)',
-                                zIndex: 10
+                                zIndex: 100
                             }}>
                                 <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>Start</div>
 
@@ -348,18 +372,49 @@ turtle.logPenStatus = function () {
     console.log('x=' + this.x + "; y=" + this.y + '; angle = ' + this.angle + '; penDown = ' + this.penDown);
 };
 
-// reposition turtle
-turtle.shiftLeft = function (length=50) {
-    turtle.x -= length;
+// BUG: reposition turtle so you can go off-canvas; fixed below
+// turtle.shiftLeft = function (length=50) {
+//     turtle.x -= length;
+// };
+// turtle.shiftRight = function (length=50) {
+//     turtle.x += length;
+// };
+// turtle.shiftUp = function (length=50) {
+//     turtle.y -= length;
+// };
+// turtle.shiftDown = function (length=50) {
+//     turtle.y += length;
+// };
+
+turtle._clampToCanvas = function (nx, ny) {
+    if (!canvas) return { x: nx, y: ny };
+
+    // keep the turtle marker inside the canvas area
+    const margin = 2; // small margin (set to 0 if need an exact edge)
+    const x = Math.max(margin, Math.min(canvas.width - margin, nx));
+    const y = Math.max(margin, Math.min(canvas.height - margin, ny));
+    return { x, y };
 };
-turtle.shiftRight = function (length=50) {
-    turtle.x += length;
+
+// reposition turtle inside the canvas
+turtle.shiftLeft = function (length = 50) {
+    const p = this._clampToCanvas(this.x - length, this.y);
+    this.x = p.x; this.y = p.y;
 };
-turtle.shiftUp = function (length=50) {
-    turtle.y -= length;
+
+turtle.shiftRight = function (length = 50) {
+    const p = this._clampToCanvas(this.x + length, this.y);
+    this.x = p.x; this.y = p.y;
 };
-turtle.shiftDown = function (length=50) {
-    turtle.y += length;
+
+turtle.shiftUp = function (length = 50) {
+    const p = this._clampToCanvas(this.x, this.y - length);
+    this.x = p.x; this.y = p.y;
+};
+
+turtle.shiftDown = function (length = 50) {
+    const p = this._clampToCanvas(this.x, this.y + length);
+    this.x = p.x; this.y = p.y;
 };
 
 // draw in a direction
@@ -457,6 +512,18 @@ turtle.center = function () {
     return this;
 };
 
+turtle._anim = {token: 0, rafId: null};
+
+turtle._stopAnim = function () {
+    this._anim.token += 1;
+    if (this._anim.rafId) {
+        cancelAnimationFrame(this._anim.rafId);
+        this._anim.rafId = null;
+    }
+};
+
+
+
 
 // ===============================================================
 //                      Pattern Functions
@@ -480,112 +547,220 @@ turtle.drawStar = function () {
     }
 };
 
-turtle.kochSnowflake = function (order = 4) {
+turtle.kochSnowflake = function (order = 4, opts = {}) {
     if (typeof canvas === "undefined" || !canvas) return;
+    this._stopAnim();
 
-    this.pushState();
+    const n = Math.max(1, Math.min(10, Math.floor(order)));
+
+    // origin (center or cursor)
+    let ox = canvas.width / 2;
+    let oy = canvas.height / 2;
+    if (opts.origin === 'cursor' && Number.isFinite(this.x) && Number.isFinite(this.y)) {
+        ox = this.x;
+        oy = this.y;
+    }
+
+    // Koch outward padding factor (max bump distance)
+    const sqrt3 = Math.sqrt(3);
+    const k = (sqrt3 / 12) * (1 - Math.pow(1 / 3, n)); // pad = side * k
+
+    // choose side length so full snowflake fits
+    const sideMaxW = canvas.width / (1 + 2 * k);
+    const sideMaxH = canvas.height / (sqrt3 / 2 + 2 * k);
+    const side = Math.min(sideMaxW, sideMaxH) * 0.92;
+
+    const pad = side * k;
+    const W = side * (1 + 2 * k);
+    const H = side * (sqrt3 / 2 + 2 * k);
+
+    // clamp origin so bounding box stays inside canvas
+    ox = Math.max(W / 2, Math.min(canvas.width - W / 2, ox));
+    oy = Math.max(H / 2, Math.min(canvas.height - H / 2, oy));
+
+    // start point: bottom-left inside padded bounding box
+    const startX = ox - W / 2 + pad;
+    const startY = oy + H / 2 - pad;
+
+    // save and setup
+    const saved = { x: this.x, y: this.y, angle: this.angle, penDown: this.penDown, penColor: this.penColor, lineWidth: this.lineWidth };
     this.penDownFn();
     this.setLineWidth(1.5);
-
-    const side = Math.min(canvas.width, canvas.height) * 0.62;
-    const h = side * Math.sqrt(3) / 2;
-
-    const startX = (canvas.width - side) / 2;
-    const startY = (canvas.height + h) / 2;
-
     this.setAngle(90);
     this.moveTo(startX, startY, false);
 
-    // segments of order of 4
+    const totalSeg = 3 * Math.pow(4, n);
     let seg = 0;
-    const totalSeg = 3 * Math.pow(4, order);
-    const colorize = true;
 
     const stepColor = () => {
-        if (!colorize) return;
         const t = totalSeg <= 1 ? 0 : seg / (totalSeg - 1);
         const hue = 200 + 140 * t; // blue -> purple
         this.setColor(`hsl(${hue}, 80%, 35%)`);
     };
 
-    const koch = (n, len) => {
-        if (n === 0) {
-            stepColor();
-            this.forward(len);
-            seg++;
-            return;
-        }
-        len /= 3;
-        koch(n - 1, len);
-        this.left(60);
-        koch(n - 1, len);
-        this.right(120);
-        koch(n - 1, len);
-        this.left(60);
-        koch(n - 1, len);
-    };
-
+    // iterative stack to avoid recursion and allow animation
+    const stack = [];
+    // need at least for 3 sides; thus, koch(n, side), then left(120)
     for (let i = 0; i < 3; i++) {
-        koch(order, side);
-        this.right(120);
+        stack.push({ type: 'turnL', a: 120 });
+        stack.push({ type: 'koch', lvl: n, len: side });
     }
 
-    this.popState();
+    const token = this._anim.token;
+    const opsPerFrame = 4000;
+
+    const tick = () => {
+        if (token !== this._anim.token) return;
+
+        let ops = 0;
+        while (ops < opsPerFrame && stack.length) {
+            const job = stack.pop();
+
+            if (job.type === 'turnL') {
+                this.left(job.a);
+                ops++;
+                continue;
+            }
+            if (job.type === 'turnR') {
+                this.right(job.a);
+                ops++;
+                continue;
+            }
+            if (job.type === 'fwd') {
+                stepColor();
+                this.forward(job.len);
+                seg++;
+                ops++;
+                continue;
+            }
+            if (job.type === 'koch') {
+                const lvl = job.lvl;
+                const len = job.len;
+                if (lvl === 0) {
+                    stack.push({ type: 'fwd', len });
+                } else {
+                    const l = len / 3;
+                    // reverse push of:
+                    // A, L60, B, R120, C, L60, D
+                    stack.push({ type: 'koch', lvl: lvl - 1, len: l }); // D
+                    stack.push({ type: 'turnL', a: 60 });
+                    stack.push({ type: 'koch', lvl: lvl - 1, len: l }); // C
+                    stack.push({ type: 'turnR', a: 120 });
+                    stack.push({ type: 'koch', lvl: lvl - 1, len: l }); // B
+                    stack.push({ type: 'turnL', a: 60 });
+                    stack.push({ type: 'koch', lvl: lvl - 1, len: l }); // A
+                }
+                continue;
+            }
+        }
+
+        if (stack.length) {
+            this._anim.rafId = requestAnimationFrame(tick);
+        } else {
+            // restore
+            this.x = saved.x; this.y = saved.y; this.angle = saved.angle;
+            this.penDown = saved.penDown; this.penColor = saved.penColor; this.lineWidth = saved.lineWidth;
+            this._anim.rafId = null;
+        }
+    };
+
+    this._anim.rafId = requestAnimationFrame(tick);
 };
 
-turtle.hilbert = function (level = 5) {
+turtle.hilbert = function (level = 5, opts = {}) {
     if (typeof canvas === "undefined" || !canvas) return;
+    this._stopAnim();
 
-    this.pushState();
-    this.penDownFn();
-    this.setLineWidth(1.2);
+    const n = Math.max(1, Math.min(10, Math.floor(level)));
 
-    const n = level;
+    // origin (center or cursor)
+    let ox = canvas.width / 2;
+    let oy = canvas.height / 2;
+    if (opts.origin === 'cursor' && Number.isFinite(this.x) && Number.isFinite(this.y)) {
+        ox = this.x;
+        oy = this.y;
+    }
 
     const size = Math.min(canvas.width, canvas.height) * 0.78;
+
+    // clamp so square stays visible
+    ox = Math.max(size / 2, Math.min(canvas.width - size / 2, ox));
+    oy = Math.max(size / 2, Math.min(canvas.height - size / 2, oy));
+
+    const startX = ox - size / 2;
+    const startY = oy - size / 2;
+
+    // step size depends on level
     const step = size / (Math.pow(2, n) - 1);
 
-    const startX = (canvas.width - size) / 2;
-    const startY = (canvas.height - size) / 2;
-
-    this.setAngle(90);          // start facing right
+    const saved = { x: this.x, y: this.y, angle: this.angle, penDown: this.penDown, penColor: this.penColor, lineWidth: this.lineWidth };
+    this.penDownFn();
+    this.setLineWidth(1.2);
+    this.setAngle(90);
     this.moveTo(startX, startY, false);
 
-    // Hilbert curve segments: 4^n - 1
     let i = 0;
     const total = Math.pow(4, n) - 1;
-    const colorize = true;
 
     const stepColor = () => {
-        if (!colorize) return;
         const t = total <= 1 ? 0 : i / (total - 1);
-        const hue = 20 + 300 * t; // warm -> rainbow
+        const hue = 20 + 300 * t;
         this.setColor(`hsl(${hue}, 85%, 40%)`);
     };
 
-    const hilbert = (lvl, angle) => {
-        if (lvl === 0) return;
+    // iterative Hilbert expansion
+    const stack = [{ type: 'hil', lvl: n, ang: 90 }];
 
-        this.right(angle);
-        hilbert(lvl - 1, -angle);
+    const token = this._anim.token;
+    const opsPerFrame = 5000;
 
-        stepColor(); this.forward(step); i++;
+    const tick = () => {
+        if (token !== this._anim.token) return;
 
-        this.left(angle);
-        hilbert(lvl - 1, angle);
+        let ops = 0;
+        while (ops < opsPerFrame && stack.length) {
+            const job = stack.pop();
 
-        stepColor(); this.forward(step); i++;
+            if (job.type === 'turnL') { this.left(job.a); ops++; continue; }
+            if (job.type === 'turnR') { this.right(job.a); ops++; continue; }
+            if (job.type === 'fwd') {
+                stepColor();
+                this.forward(step);
+                i++;
+                ops++;
+                continue;
+            }
 
-        hilbert(lvl - 1, angle);
+            if (job.type === 'hil') {
+                const lvl = job.lvl;
+                const ang = job.ang;
+                if (lvl === 0) continue;
 
-        this.left(angle);
-        stepColor(); this.forward(step); i++;
+                stack.push({ type: 'turnR', a: ang });
+                stack.push({ type: 'hil', lvl: lvl - 1, ang: -ang });
+                stack.push({ type: 'fwd' });
+                stack.push({ type: 'turnL', a: ang });
+                stack.push({ type: 'hil', lvl: lvl - 1, ang: ang });
+                stack.push({ type: 'fwd' });
+                stack.push({ type: 'hil', lvl: lvl - 1, ang: ang });
+                stack.push({ type: 'turnL', a: ang });
+                stack.push({ type: 'fwd' });
+                stack.push({ type: 'hil', lvl: lvl - 1, ang: -ang });
+                stack.push({ type: 'turnR', a: ang });
 
-        hilbert(lvl - 1, -angle);
-        this.right(angle);
+                continue;
+            }
+        }
+
+        if (stack.length) {
+            this._anim.rafId = requestAnimationFrame(tick);
+        } else {
+            this.x = saved.x; this.y = saved.y; this.angle = saved.angle;
+            this.penDown = saved.penDown; this.penColor = saved.penColor; this.lineWidth = saved.lineWidth;
+            this._anim.rafId = null;
+        }
     };
 
-    hilbert(n, 90);
-
-    this.popState();
+    this._anim.rafId = requestAnimationFrame(tick);
 };
+
