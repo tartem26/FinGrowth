@@ -332,7 +332,7 @@ turtle.kochSnowflake = function (order = 4) {
     const stepColor = () => {
         if (!colorize) return;
         const t = totalSeg <= 1 ? 0 : seg / (totalSeg - 1);
-        const hue = 200 + 140 * t;
+        const hue = 200 + 140 * t; // blue -> purple
         this.setColor(`hsl(${hue}, 80%, 35%)`);
     };
 
@@ -361,25 +361,59 @@ turtle.kochSnowflake = function (order = 4) {
     this.popState();
 };
 
-turtle.hilbert = function () {
-    var i;
-    for (i = 0; i < 18; i++) {
-        turtle.left(100);
-        turtle.forward(80);
-    }
+turtle.hilbert = function (level = 5) {
+    if (typeof canvas === "undefined" || !canvas) return;
+
+    this.pushState();
+    this.penDownFn();
+    this.setLineWidth(1.2);
+
+    const n = level;
+
+    const size = Math.min(canvas.width, canvas.height) * 0.78;
+    const step = size / (Math.pow(2, n) - 1);
+
+    const startX = (canvas.width - size) / 2;
+    const startY = (canvas.height - size) / 2;
+
+    this.setAngle(90);          // start facing right
+    this.moveTo(startX, startY, false);
+
+    // Hilbert curve segments: 4^n - 1
+    let i = 0;
+    const total = Math.pow(4, n) - 1;
+    const colorize = true;
+
+    const stepColor = () => {
+        if (!colorize) return;
+        const t = total <= 1 ? 0 : i / (total - 1);
+        const hue = 20 + 300 * t; // warm -> rainbow
+        this.setColor(`hsl(${hue}, 85%, 40%)`);
+    };
+
+    const hilbert = (lvl, angle) => {
+        if (lvl === 0) return;
+
+        this.right(angle);
+        hilbert(lvl - 1, -angle);
+
+        stepColor(); this.forward(step); i++;
+
+        this.left(angle);
+        hilbert(lvl - 1, angle);
+
+        stepColor(); this.forward(step); i++;
+
+        hilbert(lvl - 1, angle);
+
+        this.left(angle);
+        stepColor(); this.forward(step); i++;
+
+        hilbert(lvl - 1, -angle);
+        this.right(angle);
+    };
+
+    hilbert(n, 90);
+
+    this.popState();
 };
-
-
-
-
-//  Oh Wow Look at this space
-// =======================================================
-
-
-
-
-
-
-
-
-
