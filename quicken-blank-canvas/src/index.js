@@ -30,6 +30,33 @@ function ReactRoot(){
     const [y, setY] = useState(turtle.y);
     const [angle, setAngle] = useState(turtle.angle);
 
+    // additional states
+    const [kochOrigin, setKochOrigin] = useState('center'); // 'center/ | /cursor'
+    const [kochOrder, setKochOrder] = useState(4);
+
+    const [hilbertOrigin, setHilbertOrigin] = useState('center');
+    const [hilbertLevel, setHilbertLevel] = useState(5);
+
+    const [hoverMenu, setHoverMenu] = useState(null); // null | 'koch' | 'hilbert'
+
+    const drawKoch = (order = kochOrder, origin = kochOrigin) => {
+        clearCanvas();
+        turtle.kochSnowflake(Number(order), {
+            origin,
+            x: lastCursor.x,
+            y: lastCursor.y
+        });
+    };
+
+    const drawHilbert = (level = hilbertLevel, origin = hilbertOrigin) => {
+        clearCanvas();
+        turtle.hilbert(Number(level), {
+            origin,
+            x: lastCursor.x,
+            y: lastCursor.y
+        });
+    };
+
     setInterval(() => {
         setX(turtle.x);
         setY(turtle.y);
@@ -125,18 +152,154 @@ function ReactRoot(){
                     >
                         Star
                     </button>
-                    <button
-                        onClick={() => turtle.kochSnowflake()}
-                        style={styles.blueButton}
+
+                    {/* Koch Snowflake with its hover menu */}
+                    <div
+                        style={{ position: 'relative', display: 'inline-flex' }}
+                        onMouseEnter={() => setHoverMenu('koch')}
+                        onMouseLeave={() => setHoverMenu(null)}
                     >
-                        Koch Snowflake
-                    </button>
-                    <button
-                        onClick={() => turtle.hilbert()}
-                        style={styles.blueButton}
+                        <button
+                            onClick={() => drawKoch()}
+                            style={styles.blueButton}
+                        >
+                            Koch Snowflake
+                        </button>
+
+                        {hoverMenu === 'koch' && (
+                            <div style={{
+                                position: 'absolute',
+                                top: 38,
+                                left: 0,
+                                width: 220,
+                                background: 'white',
+                                border: '1px solid #000',
+                                borderRadius: 10,
+                                padding: 10,
+                                boxShadow: '0 6px 18px rgba(0,0,0,0.18)',
+                                zIndex: 10
+                            }}>
+                                <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>Start</div>
+
+                                <label style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
+                                <input
+                                    type="radio"
+                                    name="kochOrigin"
+                                    value="center"
+                                    checked={kochOrigin === 'center'}
+                                    onChange={() => { setKochOrigin('center'); drawKoch(kochOrder, 'center'); }}
+                                />{' '}
+                                    Center
+                                </label>
+
+                                <label style={{ fontSize: 12, display: 'block', marginBottom: 10 }}>
+                                <input
+                                    type="radio"
+                                    name="kochOrigin"
+                                    value="cursor"
+                                    checked={kochOrigin === 'cursor'}
+                                    onChange={() => { setKochOrigin('cursor'); drawKoch(kochOrder, 'cursor'); }}
+                                />{' '}
+                                    Cursor
+                                </label>
+
+                                <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 4 }}>
+                                    Order: {kochOrder}
+                                </div>
+                                <input
+                                    type="range"
+                                    min="1"
+                                    max="10"
+                                    value={kochOrder}
+                                    onChange={(e) => {
+                                        const v = Number(e.target.value);
+                                        setKochOrder(v);
+                                        drawKoch(v, kochOrigin);
+                                    }}
+                                    onInput={(e) => {
+                                        const v = Number(e.target.value);
+                                        setKochOrder(v);
+                                        drawKoch(v, kochOrigin);
+                                    }}
+                                    style={{ width: '100%' }}
+                                />
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Hilbert with its hover menu */}
+                    <div
+                        style={{ position: 'relative', display: 'inline-flex' }}
+                        onMouseEnter={() => setHoverMenu('hilbert')}
+                        onMouseLeave={() => setHoverMenu(null)}
                     >
-                        Hilbert
-                    </button>
+                        <button
+                            onClick={() => drawHilbert()}
+                            style={styles.blueButton}
+                        >
+                            Hilbert
+                        </button>
+
+                        {hoverMenu === 'hilbert' && (
+                            <div style={{
+                                position: 'absolute',
+                                top: 38,
+                                left: 0,
+                                width: 220,
+                                background: 'white',
+                                border: '1px solid #000',
+                                borderRadius: 10,
+                                padding: 10,
+                                boxShadow: '0 6px 18px rgba(0,0,0,0.18)',
+                                zIndex: 10
+                            }}>
+                                <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>Start</div>
+
+                                <label style={{ fontSize: 12, display: 'block', marginBottom: 4 }}>
+                                <input
+                                    type="radio"
+                                    name="hilbertOrigin"
+                                    value="center"
+                                    checked={hilbertOrigin === 'center'}
+                                    onChange={() => { setHilbertOrigin('center'); drawHilbert(hilbertLevel, 'center'); }}
+                                />{' '}
+                                    Center
+                                </label>
+
+                                <label style={{ fontSize: 12, display: 'block', marginBottom: 10 }}>
+                                <input
+                                    type="radio"
+                                    name="hilbertOrigin"
+                                    value="cursor"
+                                    checked={hilbertOrigin === 'cursor'}
+                                    onChange={() => { setHilbertOrigin('cursor'); drawHilbert(hilbertLevel, 'cursor'); }}
+                                />{' '}
+                                    Cursor
+                                </label>
+
+                                <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 4 }}>
+                                    Level: {hilbertLevel}
+                                </div>
+                                <input
+                                    type="range"
+                                    min="1"
+                                    max="10"
+                                    value={hilbertLevel}
+                                    onChange={(e) => {
+                                        const v = Number(e.target.value);
+                                        setHilbertLevel(v);
+                                        drawHilbert(v, hilbertOrigin);
+                                    }}
+                                    onInput={(e) => {
+                                        const v = Number(e.target.value);
+                                        setHilbertLevel(v);
+                                        drawHilbert(v, hilbertOrigin);
+                                    }}
+                                    style={{ width: '100%' }}
+                                />
+                            </div>
+                        )}
+                    </div>
                     <button
                         onClick={() => console.log('yo')}
                         style={styles.blueButton}
