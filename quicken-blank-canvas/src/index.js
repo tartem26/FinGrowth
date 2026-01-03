@@ -116,16 +116,23 @@ function ReactRoot(){
                     >
                         Star
                     </button>
-                    {/*
-                    // ================================================================================
-                    //                      Maybe things should go here?
-                    // ================================================================================
-                    */}
+                    <button
+                        onClick={() => turtle.kochSnowflake()}
+                        style={styles.blueButton}
+                    >
+                        Koch Snowflake
+                    </button>
+                    <button
+                        onClick={() => turtle.hilbert()}
+                        style={styles.blueButton}
+                    >
+                        Hilbert
+                    </button>
                     <button
                         onClick={() => console.log('yo')}
                         style={styles.blueButton}
                     >
-                        Custom ???
+                        FinGrowth
                     </button>
                 </div>
             </div>
@@ -221,6 +228,63 @@ turtle.right = function (angle) {
     return this;
 };
 
+// extra turtle utilities
+turtle._stateStack = [];
+
+turtle.pushState = function () {
+    this._stateStack.push({
+        x: this.x,
+        y: this.y,
+        angle: this.angle,
+        penDown: this.penDown,
+        penColor: this.penColor,
+        lineWidth: this.lineWidth
+    });
+    return this;
+}
+
+turtle.popState = function () {
+    const s = this._stateStack.pop();
+    if (!s) return this;
+    this.x = s.x;
+    this.y = s.y;
+    this.angle = s.angle;
+    this.penDown = s.penDown;
+    this.penColor = s.penColor;
+    this.lineWidth = s.lineWidth;
+    return this;
+};
+
+turtle.penUpFn = function () { this.penDown = false; return this; };
+turtle.penDownFn = function () { this.penDown = true; return this; };
+
+turtle.setColor = function (color) { this.penColor = color; return this; };
+turtle.setLineWidth = function (w) { this.lineWidth = w; return this; };
+turtle.setAngle = function (a) { this.angle = a; return this; };
+
+// move turtle instantly
+turtle.moveTo = function (x, y, draw = false) {
+    if (this.ct && draw && this.penDown) {
+        this.ct.beginPath();
+        this.ct.lineWidth = this.lineWidth;
+        this.ct.strokeStyle = this.penColor;
+        this.ct.moveTo(this.x, this.y);
+        this.ct.lineTo(x, y);
+        this.ct.stroke();
+    }
+    this.x = x;
+    this.y = y;
+    return this;
+};
+
+turtle.center = function () {
+    if (typeof canvas !== "undefined" && canvas) {
+        this.x = canvas.width / 2;
+        this.y = canvas.height / 2;
+    }
+    return this;
+};
+
 
 // ===============================================================
 //                      Pattern Functions
@@ -243,6 +307,68 @@ turtle.drawStar = function () {
         turtle.forward(80);
     }
 };
+
+turtle.kochSnowflake = function (order = 4) {
+    if (typeof canvas === "undefined" || !canvas) return;
+
+    this.pushState();
+    this.penDownFn();
+    this.setLineWidth(1.5);
+
+    const side = Math.min(canvas.width, canvas.height) * 0.62;
+    const h = side * Math.sqrt(3) / 2;
+
+    const startX = (canvas.width - side) / 2;
+    const startY = (canvas.height + h) / 2;
+
+    this.setAngle(90);
+    this.moveTo(startX, startY, false);
+
+    // segments of order of 4
+    let seg = 0;
+    const totalSeg = 3 * Math.pow(4, order);
+    const colorize = true;
+
+    const stepColor = () => {
+        if (!colorize) return;
+        const t = totalSeg <= 1 ? 0 : seg / (totalSeg - 1);
+        const hue = 200 + 140 * t;
+        this.setColor(`hsl(${hue}, 80%, 35%)`);
+    };
+
+    const koch = (n, len) => {
+        if (n === 0) {
+            stepColor();
+            this.forward(len);
+            seg++;
+            return;
+        }
+        len /= 3;
+        koch(n - 1, len);
+        this.left(60);
+        koch(n - 1, len);
+        this.right(120);
+        koch(n - 1, len);
+        this.left(60);
+        koch(n - 1, len);
+    };
+
+    for (let i = 0; i < 3; i++) {
+        koch(order, side);
+        this.right(120);
+    }
+
+    this.popState();
+};
+
+turtle.hilbert = function () {
+    var i;
+    for (i = 0; i < 18; i++) {
+        turtle.left(100);
+        turtle.forward(80);
+    }
+};
+
 
 
 
