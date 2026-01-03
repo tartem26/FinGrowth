@@ -27,9 +27,15 @@
     "webpack-dev-server": "^4.11.1"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.6",
+    "@mui/material": "^7.3.6",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-scripts": "5.0.1"
+    "react-router-dom": "^7.11.0",
+    "react-scripts": "5.0.1",
+    "recharts": "^3.6.0"
   },
   "browserslist": {
     "production": [
