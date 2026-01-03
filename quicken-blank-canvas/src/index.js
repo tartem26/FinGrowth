@@ -3,6 +3,8 @@ import ReactDOM from "react-dom";
 import styles from './styles.js';
 
 
+let lastCursor = { x: null, y: null };
+
 const sizeEnum = {
     small: [800, 480],
     medium: [1024, 576],
@@ -85,6 +87,13 @@ function ReactRoot(){
                         id="myDrawing"
                         width={width}
                         height={height}
+                        onMouseMove={(e) => {
+                            const rect = e.currentTarget.getBoundingClientRect();
+                            lastCursor = {
+                                x: e.clientX - rect.left,
+                                y: e.clientY - rect.top,
+                            };
+                        }}
                     />
                 </div>
                 <h4 style={{ margin: 0 }}>
