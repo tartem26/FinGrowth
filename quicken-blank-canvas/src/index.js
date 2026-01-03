@@ -1,7 +1,8 @@
 import React, { useState, useRef, useLayoutEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import ReactDOM from "react-dom";
+import AppRoutes from "./AppRoutes";
 import styles from './styles.js';
-
 
 let lastCursor = { x: null, y: null };
 
@@ -22,7 +23,7 @@ const turtle = {
 };
 const moveArray = ['shiftLeft', 'shiftRight', 'shiftUp', 'shiftDown'];
 
-function ReactRoot(){
+export default function ReactRoot(){
     const contentRef = useRef(null);
     const [isOverflow, setIsOverflow] = useState(false);
 
@@ -41,6 +42,11 @@ function ReactRoot(){
     const [hilbertLevel, setHilbertLevel] = useState(5);
 
     const [hoverMenu, setHoverMenu] = useState(null); // null | 'koch' | 'hilbert'
+
+    const navigate = useNavigate();
+    const handleNavigate = () => {
+        navigate('/fin-growth-dashboard');
+    };
 
     const drawKoch = (order = kochOrder, origin = kochOrigin) => {
         // clearCanvas();
@@ -325,7 +331,7 @@ function ReactRoot(){
                         )}
                     </div>
                     <button
-                        onClick={() => console.log('yo')}
+                        onClick={handleNavigate}
                         style={styles.blueButton}
                     >
                         FinGrowth
@@ -337,7 +343,7 @@ function ReactRoot(){
 }
 // react insertion
 const wrapper = document.getElementById("react-entry");
-wrapper ? ReactDOM.render(<ReactRoot />, wrapper) : false;
+wrapper ? ReactDOM.render(<AppRoutes />, wrapper) : false;
 
 
 
