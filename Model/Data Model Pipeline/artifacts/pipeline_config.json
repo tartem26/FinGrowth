@@ -1,0 +1,12 @@
+{
+  "norm_method": "sqrt",
+  "reg_mode": "l2",
+  "reg_params": {
+    "C": 1.0
+  },
+  "outlier_method": "none",
+  "feature_select_method": "heatmap_drop",
+  "scaler_method": "robust",
+  "standardization_method": "none",
+  "sampling_method": "SMOTE"
+}
