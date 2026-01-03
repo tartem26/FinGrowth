@@ -144,38 +144,51 @@ function GlassCard({ title, subtitle, actions, children, height = 280 }) {
         background: `linear-gradient(180deg, ${TOKENS.glass}, ${TOKENS.glass2})`,
         backdropFilter: `blur(${TOKENS.blur}px)`,
         boxShadow: TOKENS.shadow,
+        padding: 0.5,
       }}
     >
       {/* Blue gradient triangle */}
       <Box
         sx={{
           position: "absolute",
-          top: -80,
-          right: -80,
-          width: 220,
-          height: 220,
+          top: -90,
+          right: -90,
+          width: 260,
+          height: 260,
           background: "linear-gradient(135deg, rgba(59,130,246,0.90), rgba(147,197,253,0.15))",
           clipPath: "polygon(0 0, 100% 0, 100% 100%)",
-          filter: "blur(0px)",
           opacity: 0.95,
         }}
       />
-      <Box sx={{ position: "relative", height: "100%", p: 2.2 }}>
+
+      {/* important: flex column so charts never overlap */}
+      <Box
+        sx={{
+          position: "relative",
+          height: "100%",
+          p: { xs: 2.2, md: 2.8 },
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
         <Stack direction="row" alignItems="flex-start" justifyContent="space-between" spacing={2}>
           <Box>
-            <Typography variant="subtitle1" sx={{ fontWeight: 800, letterSpacing: 0.2 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 800, letterSpacing: 0.2, lineHeight: 1.15 }}>
               {title}
             </Typography>
             {subtitle ? (
-              <Typography variant="caption" sx={{ opacity: 0.75 }}>
+              <Typography variant="caption" sx={{ opacity: 0.75, display: "block", mt: 0.4 }}>
                 {subtitle}
               </Typography>
             ) : null}
           </Box>
           {actions ? <Box>{actions}</Box> : null}
         </Stack>
-        <Divider sx={{ mt: 1.2, mb: 1.6, opacity: 0.25 }} />
-        <Box sx={{ height: `calc(100% - 66px)` }}>{children}</Box>
+
+        <Divider sx={{ mt: 1.4, mb: 2.0, opacity: 0.25 }} />
+
+        {/* important: minHeight 0 so ResponsiveContainer can measure */}
+        <Box sx={{ flex: 1, minHeight: 0 }}>{children}</Box>
       </Box>
     </Card>
   );
@@ -221,7 +234,7 @@ export default function FinGrowthDashboard() {
   const radar4 = useMemo(() => makeRadarData(4), [savedAt]);
 
   const scatter = useMemo(() => makeClusterScatter(), []);
-  const networth = useMemo(() => makeNetworthSeries(18), [savedAt]);
+  const networth = useMemo(() => makeNetworthSeries(24), [savedAt]);
 
   function emptyRow() {
     const r = {};
@@ -248,7 +261,9 @@ export default function FinGrowthDashboard() {
   function onSave() {
     // UI-only: mimic inference/heuristic update
     const jitter = () => Math.random() * 0.08 - 0.04;
-    const base = [0.05, 0.07, 0.10, 0.55, 0.16, 0.07].map((p) => Math.max(0.01, Math.min(0.90, p + jitter())));
+    const base = [0.05, 0.07, 0.10, 0.55, 0.16, 0.07].map((p) =>
+      Math.max(0.01, Math.min(0.90, p + jitter()))
+    );
     const sum = base.reduce((a, b) => a + b, 0);
     const probs = base.map((p) => p / sum);
     const top = probs.indexOf(Math.max(...probs));
@@ -319,91 +334,95 @@ export default function FinGrowthDashboard() {
         </Toolbar>
       </AppBar>
 
-      <Container maxWidth="xl" sx={{ py: 3.2 }}>
-        {/* Row 1: 4 radars */}
-        <Grid container spacing={2.2}>
-          <Grid item xs={12} md={3}>
-            <GlassCard title="Radar · Snapshot" subtitle="Last saved month profile" height={300}>
-              <RadarPanel data={radar1} />
-            </GlassCard>
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <GlassCard title="Radar · Trend" subtitle="Rolling behavior signals" height={300}>
-              <RadarPanel data={radar2} />
-            </GlassCard>
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <GlassCard title="Radar · Risk" subtitle="Debt & essentials pressure" height={300}>
-              <RadarPanel data={radar3} />
-            </GlassCard>
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <GlassCard title="Radar · Growth" subtitle="Savings momentum" height={300}>
-              <RadarPanel data={radar4} />
-            </GlassCard>
-          </Grid>
-
-          {/* Row 2: cluster scatter (left) with networth (right) */}
-          <Grid item xs={12} md={7}>
-            <GlassCard
-              title="Cluster space"
-              subtitle="All 6 clusters overview (mock)"
-              height={340}
-              actions={
-                <Stack direction="row" spacing={1}>
-                  <Pill label="Top" value={topMeta.name} />
-                  <Pill label="Range" value={topMeta.range} />
-                </Stack>
-              }
-            >
-              <ClusterScatterPanel data={scatter} />
-            </GlassCard>
-          </Grid>
-          <Grid item xs={12} md={5}>
-            <GlassCard title="Net worth" subtitle="Savings / net worth projection (mock)" height={340}>
-              <NetworthPanel data={networth} />
-            </GlassCard>
+      {/* make the whole dashboard row-width bigger, so charts can actually grow */}
+      <Container  sx={{ py: { xs: 3.2, md: 4.2 }, px: { xs: 2, md: 3, lg: 6 } }}>
+        {/* strict layout: 4 rows only, no mixing */}
+        <Stack spacing={{ xs: 2.4, md: 3.0 }} alignItems="center">
+          {/* Row 1: ONLY 4 radars (full width) */}
+          <Grid container spacing={{ xs: 2.2, md: 2.6 }} sx={{ width: "100%" }}>
+            <Grid item xs={12} sm={6} lg={3} sx={{ width: "23%", alignSelf: "stretch" }}>
+              <GlassCard title="Radar · Snapshot" subtitle="Last saved month profile" height={420}>
+                <RadarPanel data={radar1} />
+              </GlassCard>
+            </Grid>
+            <Grid item xs={12} sm={6} lg={3} sx={{ width: "23%", alignSelf: "stretch" }}>
+              <GlassCard title="Radar · Trend" subtitle="Rolling behavior signals" height={420}>
+                <RadarPanel data={radar2} />
+              </GlassCard>
+            </Grid>
+            <Grid item xs={12} sm={6} lg={3} sx={{ width: "23%", alignSelf: "stretch" }}>
+              <GlassCard title="Radar · Risk" subtitle="Debt & essentials pressure" height={420}>
+                <RadarPanel data={radar3} />
+              </GlassCard>
+            </Grid>
+            <Grid item xs={12} sm={6} lg={3} sx={{ width: "23%", alignSelf: "stretch" }}>
+              <GlassCard title="Radar · Growth" subtitle="Savings momentum" height={420}>
+                <RadarPanel data={radar4} />
+              </GlassCard>
+            </Grid>
           </Grid>
 
-          {/* Row 3: input lines */}
-          <Grid item xs={12}>
-            <GlassCard
-              title="Monthly inputs"
-              subtitle="Add 1+ months. More months → better trajectory signal."
-              height={rows.length <= 2 ? 330 : 420}
-              actions={
-                <Button
-                  variant="contained"
-                  onClick={onSave}
-                  startIcon={<CheckCircleRoundedIcon />}
-                  sx={{
-                    borderRadius: 999,
-                    textTransform: "none",
-                    fontWeight: 900,
-                    background: "linear-gradient(135deg, rgba(34,197,94,1), rgba(16,185,129,0.85))",
-                    boxShadow: "0 14px 30px rgba(34,197,94,0.22)",
-                  }}
-                >
-                  Save
-                </Button>
-              }
-            >
-              <InputsPanel rows={rows} onAdd={addRow} onDelete={deleteRow} onChange={updateCell} />
-            </GlassCard>
+          {/* Row 2: ONLY net worth (left) and clusters (right), full width */}
+          <Grid container spacing={{ xs: 2.2, md: 2.6 }} sx={{ width: "100%" }}>
+            <Grid item xs={12} md={6} sx={{ width: "49%", alignSelf: "stretch" }}>
+              <GlassCard title="Net worth" subtitle="Savings / net worth projection" height={460}>
+                <NetworthPanel data={networth} />
+              </GlassCard>
+            </Grid>
+
+            <Grid item xs={12} md={6} sx={{ width: "49%", alignSelf: "stretch" }}>
+              <GlassCard
+                title="Cluster space"
+                subtitle="All 6 clusters overview"
+                height={460}
+                width={760}
+                actions={
+                  <Stack direction="row" spacing={1}>
+                    <Pill label="Top" value={topMeta.name} />
+                    <Pill label="Range" value={topMeta.range} />
+                  </Stack>
+                }
+              >
+                <ClusterScatterPanel data={scatter} />
+              </GlassCard>
+            </Grid>
           </Grid>
 
-          {/* Result footer */}
-          <Grid item xs={12}>
-            <ResultsPanel clusterResult={clusterResult} />
-          </Grid>
-        </Grid>
+          {/* Row 3: ONLY monthly inputs (full width) */}
+          <GlassCard
+            title="Monthly inputs"
+            subtitle="Add 1+ months. More months → better trajectory estimation."
+            height={rows.length <= 2 ? 620 : 720}
+            actions={
+              <Button
+                variant="contained"
+                onClick={onSave}
+                startIcon={<CheckCircleRoundedIcon />}
+                sx={{
+                  borderRadius: 999,
+                  textTransform: "none",
+                  fontWeight: 900,
+                  background: "linear-gradient(135deg, rgba(34,197,94,1), rgba(16,185,129,0.85))",
+                  boxShadow: "0 14px 30px rgba(34,197,94,0.22)",
+                  px: 2.2,
+                  py: 1.1,
+                }}
+              >
+                Save
+              </Button>
+            }
+          >
+            <InputsPanel rows={rows} onAdd={addRow} onDelete={deleteRow} onChange={updateCell} />
+          </GlassCard>
+
+          {/* Row 4: ONLY conclusion */}
+          <ResultsPanel clusterResult={clusterResult} />
+        </Stack>
       </Container>
 
       <Box sx={{ py: 3, opacity: 0.75 }}>
-        <Container maxWidth="xl">
-          <Typography variant="caption">
-            UI prototype · ML wiring comes next (save triggers a mock update).
-          </Typography>
+        <Container maxWidth={false} sx={{ px: { xs: 2, md: 3, lg: 6 } }}>
+          <Typography variant="caption">FinGrowth 2026 · ML pipeline by Artem Tikhonov.</Typography>
         </Container>
       </Box>
     </Box>
@@ -416,9 +435,9 @@ export default function FinGrowthDashboard() {
 function RadarPanel({ data }) {
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <RadarChart data={data} outerRadius="72%">
+      <RadarChart data={data} outerRadius="88%">
         <PolarGrid strokeOpacity={0.25} />
-        <PolarAngleAxis dataKey="metric" tick={{ fontSize: 11 }} />
+        <PolarAngleAxis dataKey="metric" tick={{ fontSize: 12 }} />
         <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 10 }} />
         <Radar dataKey="v" stroke="rgba(59,130,246,0.9)" fill="rgba(59,130,246,0.30)" />
         <Tooltip />
@@ -449,19 +468,14 @@ function ClusterScatterPanel({ data }) {
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <ScatterChart margin={{ top: 6, right: 10, left: 0, bottom: 0 }}>
+      <ScatterChart margin={{ top: 8, right: 14, left: 0, bottom: 6 }}>
         <CartesianGrid strokeOpacity={0.25} />
-        <XAxis type="number" dataKey="x" tick={{ fontSize: 11 }} />
-        <YAxis type="number" dataKey="y" tick={{ fontSize: 11 }} />
+        <XAxis type="number" dataKey="x" tick={{ fontSize: 12 }} />
+        <YAxis type="number" dataKey="y" tick={{ fontSize: 12 }} />
         <Tooltip cursor={{ strokeOpacity: 0.2 }} />
         <Legend />
         {grouped.map(([k, pts]) => (
-          <Scatter
-            key={k}
-            name={CLUSTER_META[k]?.name ?? `C${k}`}
-            data={pts}
-            fill={palette[k % palette.length]}
-          />
+          <Scatter key={k} name={CLUSTER_META[k]?.name ?? `C${k}`} data={pts} fill={palette[k % palette.length]} />
         ))}
       </ScatterChart>
     </ResponsiveContainer>
@@ -471,10 +485,10 @@ function ClusterScatterPanel({ data }) {
 function NetworthPanel({ data }) {
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <LineChart data={data} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+      <LineChart data={data} margin={{ top: 12, right: 12, left: 0, bottom: 6 }}>
         <CartesianGrid strokeOpacity={0.25} />
-        <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-        <YAxis tick={{ fontSize: 11 }} width={40} />
+        <XAxis dataKey="month" tick={{ fontSize: 12 }} />
+        <YAxis tick={{ fontSize: 12 }} width={46} />
         <Tooltip />
         <Line type="monotone" dataKey="networth" stroke="rgba(59,130,246,0.9)" strokeWidth={3} dot={false} />
       </LineChart>
@@ -487,9 +501,9 @@ function NetworthPanel({ data }) {
 // -----------------------------
 function InputsPanel({ rows, onAdd, onDelete, onChange }) {
   return (
-    <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
-      <Box sx={{ flex: 1, overflow: "auto", pr: 0.8 }}>
-        <Stack spacing={1.8}>
+    <Box sx={{ height: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}>
+      <Box sx={{ flex: 1, minHeight: 0, overflow: "auto", pr: 0.6 }}>
+        <Stack spacing={2.0}>
           {rows.map((r, idx) => (
             <MonthRow
               key={idx}
@@ -503,7 +517,7 @@ function InputsPanel({ rows, onAdd, onDelete, onChange }) {
         </Stack>
       </Box>
 
-      <Stack direction="row" alignItems="center" justifyContent="flex-end" sx={{ pt: 1.6 }}>
+      <Stack direction="row" alignItems="center" justifyContent="flex-end" sx={{ pt: 2.0 }}>
         <Button
           onClick={onAdd}
           startIcon={<AddRoundedIcon />}
@@ -514,6 +528,8 @@ function InputsPanel({ rows, onAdd, onDelete, onChange }) {
             fontWeight: 900,
             background: "linear-gradient(135deg, rgba(37,99,235,1), rgba(96,165,250,0.85))",
             boxShadow: "0 14px 28px rgba(59,130,246,0.18)",
+            px: 2.2,
+            py: 1.1,
           }}
         >
           Add month
@@ -531,10 +547,10 @@ function MonthRow({ index, row, onChange, onDelete, canDelete }) {
         border: "1px solid rgba(15, 23, 42, 0.10)",
         background: "rgba(255,255,255,0.70)",
         backdropFilter: `blur(${TOKENS.blur}px)`,
-        p: 1.4,
+        p: { xs: 1.4, md: 1.8 },
       }}
     >
-      <Stack spacing={1.2}>
+      <Stack spacing={1.4} padding={0.7}>
         <Stack direction="row" justifyContent="space-between" alignItems="center">
           <Stack direction="row" spacing={1} alignItems="center">
             <Chip
@@ -552,26 +568,24 @@ function MonthRow({ index, row, onChange, onDelete, canDelete }) {
             </Typography>
           </Stack>
 
-          <Stack direction="row" spacing={1} alignItems="center">
-            <IconButton
-              onClick={onDelete}
-              disabled={!canDelete}
-              sx={{
-                width: 40,
-                height: 40,
-                borderRadius: 12,
-                border: "1px solid rgba(244,63,94,0.25)",
-                background: canDelete ? "rgba(244,63,94,0.10)" : "rgba(2,6,23,0.03)",
-              }}
-            >
-              <DeleteOutlineRoundedIcon sx={{ color: canDelete ? "rgba(244,63,94,0.9)" : "rgba(2,6,23,0.35)" }} />
-            </IconButton>
-          </Stack>
+          <IconButton
+            onClick={onDelete}
+            disabled={!canDelete}
+            sx={{
+              width: 42,
+              height: 42,
+              borderRadius: 12,
+              border: "1px solid rgba(244,63,94,0.25)",
+              background: canDelete ? "rgba(244,63,94,0.10)" : "rgba(2,6,23,0.03)",
+            }}
+          >
+            <DeleteOutlineRoundedIcon sx={{ color: canDelete ? "rgba(244,63,94,0.9)" : "rgba(2,6,23,0.35)" }} />
+          </IconButton>
         </Stack>
 
-        <Grid container spacing={1.2}>
+        <Grid container spacing={{ xs: 1.2, md: 1.4 }}>
           {CATEGORIES_17.map((c) => (
-            <Grid item xs={6} sm={4} md={2.4} lg={2} key={c.key}>
+            <Grid item xs={6} sm={4} md={3} lg={2} key={c.key}>
               <TextField
                 label={c.label}
                 value={row[c.key]}
@@ -614,17 +628,23 @@ function ResultsPanel({ clusterResult }) {
         boxShadow: TOKENS.shadow,
       }}
     >
-      <Box sx={{ p: 2.2 }}>
-        <Stack spacing={1.2}>
-          <Stack direction={{ xs: "column", md: "row" }} alignItems={{ xs: "flex-start", md: "center" }} justifyContent="space-between" spacing={1.2}>
+      <Box sx={{ p: { xs: 2.2, md: 2.8 } }}>
+        <Stack spacing={1.6}>
+          <Stack
+            direction={{ xs: "column", md: "row" }}
+            alignItems={{ xs: "flex-start", md: "center" }}
+            justifyContent="space-between"
+            spacing={1.4}
+            padding={0.5}
+          >
             <Box>
-              <Typography sx={{ fontWeight: 900 }}>Conclusion</Typography>
+              <Typography sx={{ fontWeight: 900, fontSize: 18 }}>Conclusion</Typography>
               <Typography variant="caption" sx={{ opacity: 0.75 }}>
-                After Save, we show the predicted cluster + probability breakdown (mock UI).
+                After Save, FinGrowth shows the predicted financial clusters with their probabilistic breakdown.
               </Typography>
             </Box>
 
-            <Stack direction="row" spacing={1} alignItems="center">
+            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
               <Chip
                 label={`${CLUSTER_META[top].name} · ${CLUSTER_META[top].range}`}
                 sx={{
@@ -648,34 +668,37 @@ function ResultsPanel({ clusterResult }) {
 
           <Divider sx={{ opacity: 0.25 }} />
 
-          <Grid container spacing={1.2}>
+          <Grid container spacing={{ xs: 1.2, md: 1.6 }}>
             {probs.map((p, i) => (
               <Grid item xs={12} sm={6} md={4} lg={2} key={i}>
                 <Box
                   sx={{
-                    borderRadius: 16,
+                    borderRadius: 18,
                     border: "1px solid rgba(15, 23, 42, 0.10)",
                     background: "rgba(255,255,255,0.70)",
-                    p: 1.4,
+                    p: 1.8,
                     position: "relative",
                     overflow: "hidden",
+                    minHeight: 110,
+                    minWidth: 165,
                   }}
                 >
                   <Box
                     sx={{
                       position: "absolute",
                       inset: 0,
-                      background: i === top
-                        ? "linear-gradient(135deg, rgba(34,197,94,0.14), rgba(34,197,94,0.02))"
-                        : "linear-gradient(135deg, rgba(59,130,246,0.10), rgba(59,130,246,0.01))",
+                      background:
+                        i === top
+                          ? "linear-gradient(135deg, rgba(34,197,94,0.16), rgba(34,197,94,0.02))"
+                          : "linear-gradient(135deg, rgba(59,130,246,0.12), rgba(59,130,246,0.01))",
                       pointerEvents: "none",
                     }}
                   />
-                  <Stack spacing={0.6} sx={{ position: "relative" }}>
+                  <Stack spacing={0.6} sx={{ position: "relative" }} alignItems="center">
                     <Typography variant="caption" sx={{ opacity: 0.75, fontWeight: 800 }}>
                       {CLUSTER_META[i].name}
                     </Typography>
-                    <Typography sx={{ fontWeight: 1000, fontSize: 22 }}>
+                    <Typography sx={{ fontWeight: 1000, fontSize: 24, lineHeight: 1.05 }}>
                       {(p * 100).toFixed(2)}%
                     </Typography>
                     <Typography variant="caption" sx={{ opacity: 0.65 }}>
