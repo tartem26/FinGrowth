@@ -13,10 +13,14 @@ import {
   TextField,
   Toolbar,
   Typography,
+  Menu,
+  MenuItem,
 } from "@mui/material";
 import AddRoundedIcon from "@mui/icons-material/AddRounded";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
+import AutoFixHighRoundedIcon from "@mui/icons-material/AutoFixHighRounded";
+import ArrowDropDownRoundedIcon from "@mui/icons-material/ArrowDropDownRounded";
 
 // install recharts to have charts: npm i recharts
 import {
@@ -124,6 +128,157 @@ function makeNetworthSeries(months = 12) {
   for (let i = 1; i <= months; i++) {
     net += 400 + Math.random() * 350;
     out.push({ month: i, networth: Math.round(net) });
+  }
+  return out;
+}
+
+// -----------------------------
+// Autofill month generator (UI-only)
+// -----------------------------
+function mulberry32(seed) {
+  // small deterministic rng so autofill feels stable
+  let t = seed >>> 0;
+  return function () {
+    t += 0x6d2b79f5;
+    let x = Math.imul(t ^ (t >>> 15), 1 | t);
+    x ^= x + Math.imul(x ^ (x >>> 7), 61 | x);
+    return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function rBetween(rng, a, b) {
+  return a + (b - a) * rng();
+}
+
+function capShares(shares, cap) {
+  const s = { ...shares };
+  let total = 0;
+  for (const k of Object.keys(s)) total += Math.max(0, +s[k] || 0);
+
+  if (total > cap && total > 0) {
+    const scale = cap / total;
+    for (const k of Object.keys(s)) s[k] = Math.max(0, (+s[k] || 0) * scale);
+  }
+  return s;
+}
+
+function buildAutofillMonth(clusterIdx, monthIndex) {
+  const rng = mulberry32(42 + monthIndex * 97 + clusterIdx * 131);
+
+  const INCOME_KEY = "Income_Deposits";
+
+  // monthly income ranges (same idea as your clusters)
+  const incomeRanges = [
+    [1200, 2200],
+    [2300, 4200],
+    [4200, 6200],
+    [6200, 12900],
+    [12900, 17500],
+    [17500, 40000],
+  ];
+
+  const [lo, hi] = incomeRanges[clusterIdx] ?? incomeRanges[3];
+  const income = rBetween(rng, lo, hi);
+
+  // start all outflows at 0 share
+  const shares = {};
+  for (const c of CATEGORIES_17) {
+    if (c.key !== INCOME_KEY) shares[c.key] = 0.0;
+  }
+
+  // quick “shape templates” per cluster (UI-only)
+  let cap = 0.86;
+
+  if (clusterIdx === 0) {
+    shares.Housing = rBetween(rng, 0.35, 0.50);
+    shares.Utilities_Telecom = rBetween(rng, 0.06, 0.10);
+    shares.Groceries_FoodAtHome = rBetween(rng, 0.10, 0.18);
+    shares.Debt_Payments = rBetween(rng, 0.10, 0.22);
+    shares.Savings_Investments = rBetween(rng, 0.00, 0.03);
+    shares.Dining_FoodAway = rBetween(rng, 0.01, 0.05);
+    shares.Entertainment = rBetween(rng, 0.00, 0.02);
+    shares.Travel = rBetween(rng, 0.00, 0.01);
+    shares.Subscriptions_Memberships = rBetween(rng, 0.00, 0.01);
+    cap = rBetween(rng, 0.86, 0.94);
+  } else if (clusterIdx === 1) {
+    shares.Housing = rBetween(rng, 0.30, 0.42);
+    shares.Utilities_Telecom = rBetween(rng, 0.05, 0.09);
+    shares.Groceries_FoodAtHome = rBetween(rng, 0.09, 0.15);
+    shares.Debt_Payments = rBetween(rng, 0.08, 0.18);
+    shares.Savings_Investments = rBetween(rng, 0.02, 0.08);
+    shares.Dining_FoodAway = rBetween(rng, 0.02, 0.06);
+    shares.Entertainment = rBetween(rng, 0.00, 0.03);
+    shares.Travel = rBetween(rng, 0.00, 0.02);
+    shares.Subscriptions_Memberships = rBetween(rng, 0.00, 0.02);
+    cap = rBetween(rng, 0.82, 0.92);
+  } else if (clusterIdx === 2) {
+    shares.Housing = rBetween(rng, 0.25, 0.36);
+    shares.Utilities_Telecom = rBetween(rng, 0.04, 0.08);
+    shares.Groceries_FoodAtHome = rBetween(rng, 0.07, 0.12);
+    shares.Debt_Payments = rBetween(rng, 0.04, 0.12);
+    shares.Savings_Investments = rBetween(rng, 0.08, 0.16);
+    shares.Dining_FoodAway = rBetween(rng, 0.03, 0.08);
+    shares.Entertainment = rBetween(rng, 0.01, 0.04);
+    shares.Travel = rBetween(rng, 0.00, 0.04);
+    shares.Subscriptions_Memberships = rBetween(rng, 0.005, 0.02);
+    cap = rBetween(rng, 0.78, 0.90);
+  } else if (clusterIdx === 3) {
+    shares.Housing = rBetween(rng, 0.20, 0.32);
+    shares.Utilities_Telecom = rBetween(rng, 0.03, 0.07);
+    shares.Groceries_FoodAtHome = rBetween(rng, 0.06, 0.11);
+    shares.Debt_Payments = rBetween(rng, 0.02, 0.08);
+    shares.Savings_Investments = rBetween(rng, 0.14, 0.28);
+    shares.Dining_FoodAway = rBetween(rng, 0.03, 0.09);
+    shares.Entertainment = rBetween(rng, 0.01, 0.05);
+    shares.Travel = rBetween(rng, 0.01, 0.06);
+    shares.Subscriptions_Memberships = rBetween(rng, 0.01, 0.03);
+    cap = rBetween(rng, 0.72, 0.88);
+  } else if (clusterIdx === 4) {
+    shares.Housing = rBetween(rng, 0.14, 0.26);
+    shares.Utilities_Telecom = rBetween(rng, 0.02, 0.06);
+    shares.Groceries_FoodAtHome = rBetween(rng, 0.04, 0.09);
+    shares.Debt_Payments = rBetween(rng, 0.00, 0.05);
+    shares.Savings_Investments = rBetween(rng, 0.20, 0.35);
+    shares.Dining_FoodAway = rBetween(rng, 0.04, 0.10);
+    shares.Entertainment = rBetween(rng, 0.02, 0.06);
+    shares.Travel = rBetween(rng, 0.02, 0.08);
+    shares.Subscriptions_Memberships = rBetween(rng, 0.01, 0.04);
+    cap = rBetween(rng, 0.65, 0.85);
+  } else {
+    shares.Housing = rBetween(rng, 0.08, 0.18);
+    shares.Utilities_Telecom = rBetween(rng, 0.01, 0.04);
+    shares.Groceries_FoodAtHome = rBetween(rng, 0.03, 0.08);
+    shares.Debt_Payments = rBetween(rng, 0.00, 0.03);
+    shares.Savings_Investments = rBetween(rng, 0.25, 0.45);
+    shares.Dining_FoodAway = rBetween(rng, 0.04, 0.10);
+    shares.Entertainment = rBetween(rng, 0.02, 0.08);
+    shares.Travel = rBetween(rng, 0.03, 0.12);
+    shares.Subscriptions_Memberships = rBetween(rng, 0.02, 0.06);
+    cap = rBetween(rng, 0.55, 0.82);
+  }
+
+  // light fill for the remaining categories so it doesn't look empty
+  for (const k of [
+    "Transportation_Gas",
+    "Transportation_PublicTransit",
+    "Insurance_Health",
+    "Insurance_Auto",
+    "Medical_OutOfPocket",
+    "Pets",
+    "Education_Childcare",
+  ]) {
+    if (k in shares) shares[k] = rBetween(rng, 0.0, 0.06);
+  }
+
+  const capped = capShares(shares, cap);
+
+  // output as strings (TextField friendly)
+  const out = {};
+  out[INCOME_KEY] = String(Math.round(income));
+
+  for (const c of CATEGORIES_17) {
+    if (c.key === INCOME_KEY) continue;
+    out[c.key] = String(Math.round((capped[c.key] || 0) * income));
   }
   return out;
 }
@@ -254,6 +409,16 @@ export default function FinGrowthDashboard() {
     setRows((prev) => {
       const next = [...prev];
       next[rowIdx] = { ...next[rowIdx], [key]: value };
+      return next;
+    });
+  }
+
+  function autofillRow(rowIdx, clusterIdx) {
+    const filled = buildAutofillMonth(clusterIdx, rowIdx);
+
+    setRows((prev) => {
+      const next = [...prev];
+      next[rowIdx] = { ...next[rowIdx], ...filled };
       return next;
     });
   }
@@ -412,7 +577,7 @@ export default function FinGrowthDashboard() {
               </Button>
             }
           >
-            <InputsPanel rows={rows} onAdd={addRow} onDelete={deleteRow} onChange={updateCell} />
+            <InputsPanel rows={rows} onAdd={addRow} onDelete={deleteRow} onChange={updateCell} onAutofill={autofillRow} />
           </GlassCard>
 
           {/* Row 4: ONLY conclusion */}
@@ -499,7 +664,7 @@ function NetworthPanel({ data }) {
 // -----------------------------
 // Inputs panel
 // -----------------------------
-function InputsPanel({ rows, onAdd, onDelete, onChange }) {
+function InputsPanel({ rows, onAdd, onDelete, onChange, onAutofill }) {
   return (
     <Box sx={{ height: "100%", display: "flex", flexDirection: "column", minHeight: 0 }}>
       <Box sx={{ flex: 1, minHeight: 0, overflow: "auto", pr: 0.6 }}>
@@ -512,6 +677,7 @@ function InputsPanel({ rows, onAdd, onDelete, onChange }) {
               canDelete={rows.length > 1}
               onDelete={() => onDelete(idx)}
               onChange={(key, value) => onChange(idx, key, value)}
+              onAutofill={(clusterIdx) => onAutofill(idx, clusterIdx)}
             />
           ))}
         </Stack>
@@ -539,8 +705,24 @@ function InputsPanel({ rows, onAdd, onDelete, onChange }) {
   );
 }
 
-function MonthRow({ index, row, onChange, onDelete, canDelete }) {
-  return (
+function MonthRow({ index, row, onChange, onDelete, canDelete, onAutofill }) {
+    const [autoAnchor, setAutoAnchor] = useState(null);
+    const autoOpen = Boolean(autoAnchor);
+
+    function openAutofillMenu(e) {
+        setAutoAnchor(e.currentTarget);
+    }
+
+    function closeAutofillMenu() {
+        setAutoAnchor(null);
+    }
+
+    function pickAutofill(i) {
+        closeAutofillMenu();
+        onAutofill(i);
+    }
+
+    return (
     <Box
       sx={{
         borderRadius: TOKENS.radius,
@@ -568,19 +750,66 @@ function MonthRow({ index, row, onChange, onDelete, canDelete }) {
             </Typography>
           </Stack>
 
-          <IconButton
-            onClick={onDelete}
-            disabled={!canDelete}
-            sx={{
-              width: 42,
-              height: 42,
-              borderRadius: 12,
-              border: "1px solid rgba(244,63,94,0.25)",
-              background: canDelete ? "rgba(244,63,94,0.10)" : "rgba(2,6,23,0.03)",
-            }}
-          >
-            <DeleteOutlineRoundedIcon sx={{ color: canDelete ? "rgba(244,63,94,0.9)" : "rgba(2,6,23,0.35)" }} />
-          </IconButton>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Button
+                onClick={openAutofillMenu}
+                startIcon={<AutoFixHighRoundedIcon />}
+                endIcon={<ArrowDropDownRoundedIcon />}
+                variant="contained"
+                size="small"
+                sx={{
+                borderRadius: 999,
+                textTransform: "none",
+                fontWeight: 900,
+                background: "rgba(59,130,246,0.10)",
+                color: "rgba(15,23,42,0.92)",
+                border: "1px solid rgba(59,130,246,0.22)",
+                boxShadow: "none",
+                "&:hover": { background: "rgba(59,130,246,0.14)", boxShadow: "none" },
+                }}
+            >
+                Autofill
+            </Button>
+
+            <Menu
+                anchorEl={autoAnchor}
+                open={autoOpen}
+                onClose={closeAutofillMenu}
+                PaperProps={{
+                sx: {
+                    borderRadius: 16,
+                    border: "1px solid rgba(15, 23, 42, 0.10)",
+                    boxShadow: TOKENS.shadow,
+                    overflow: "hidden",
+                },
+                }}
+            >
+                {CLUSTER_META.map((c, i) => (
+                <MenuItem key={c.name} onClick={() => pickAutofill(i)}>
+                    <Box sx={{ width: "100%" }}>
+                    <Typography sx={{ fontWeight: 900, fontSize: 13 }}>{c.name}</Typography>
+                    <Typography variant="caption" sx={{ opacity: 0.7 }}>
+                        {c.range}
+                    </Typography>
+                    </Box>
+                </MenuItem>
+                ))}
+            </Menu>
+
+            <IconButton
+                onClick={onDelete}
+                disabled={!canDelete}
+                sx={{
+                width: 42,
+                height: 42,
+                borderRadius: 12,
+                border: "1px solid rgba(244,63,94,0.25)",
+                background: canDelete ? "rgba(244,63,94,0.10)" : "rgba(2,6,23,0.03)",
+                }}
+            >
+                <DeleteOutlineRoundedIcon sx={{ color: canDelete ? "rgba(244,63,94,0.9)" : "rgba(2,6,23,0.35)" }} />
+            </IconButton>
+          </Stack>
         </Stack>
 
         <Grid container spacing={{ xs: 1.2, md: 1.4 }}>
