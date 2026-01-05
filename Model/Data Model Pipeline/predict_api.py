@@ -394,106 +394,183 @@ def _score_0_100(x01: float) -> float:
 
 def _radar_from_month_df(df: pd.DataFrame) -> dict[str, list[dict[str, float]]]:
     """
-    Keys match frontend:
+    IMPORTANT: keys match frontend consumption:
       radars.snapshot / radars.trend / radars.risk / radars.growth
 
-    Rates:
-      Essentials = Housing + Utilities + Groceries
-      Discretionary = Dining + Entertainment + Travel + Subscriptions
+    Definitions:
+      - snapshot: latest month only (level)
+      - trend: mean level of last W_trend months
+      - risk: conservative stability level across ALL months using (mean - std) of the score series
+      - growth: momentum; compares last W_growth months vs the W_growth months before that (50 = no change)
     """
     inc = df["Income_Deposits"].to_numpy(dtype=float)
 
+    # Sum of all outflows (includes savings and debt as uses of money)
     outflows = np.zeros_like(inc)
     for k in UI_CATEGORIES_17:
         if k == "Income_Deposits":
             continue
         outflows += np.nan_to_num(df[k].to_numpy(dtype=float), nan=0.0)
 
+    # Pull categories (NaN -> 0 for amounts)
     housing = np.nan_to_num(df["Housing"].to_numpy(dtype=float), nan=0.0)
     utilities = np.nan_to_num(df["Utilities_Telecom"].to_numpy(dtype=float), nan=0.0)
     groceries = np.nan_to_num(df["Groceries_FoodAtHome"].to_numpy(dtype=float), nan=0.0)
+    trans = np.nan_to_num(df["Transportation_Variable"].to_numpy(dtype=float), nan=0.0)
+    auto = np.nan_to_num(df["Auto_Costs"].to_numpy(dtype=float), nan=0.0)
+    ins = np.nan_to_num(df["Insurance_All"].to_numpy(dtype=float), nan=0.0)
+    med = np.nan_to_num(df["Healthcare_OOP"].to_numpy(dtype=float), nan=0.0)
+    edu = np.nan_to_num(df["Education_Childcare"].to_numpy(dtype=float), nan=0.0)
+    pets = np.nan_to_num(df["Pets"].to_numpy(dtype=float), nan=0.0)
 
     dining = np.nan_to_num(df["Dining_FoodAway"].to_numpy(dtype=float), nan=0.0)
     ent = np.nan_to_num(df["Entertainment"].to_numpy(dtype=float), nan=0.0)
     subs = np.nan_to_num(df["Subscriptions_Memberships"].to_numpy(dtype=float), nan=0.0)
     travel = np.nan_to_num(df["Travel"].to_numpy(dtype=float), nan=0.0)
+    cash = np.nan_to_num(df["Cash_ATM_MiscTransfers"].to_numpy(dtype=float), nan=0.0)
 
     debt = np.nan_to_num(df["Debt_Payments"].to_numpy(dtype=float), nan=0.0)
     savings = np.nan_to_num(df["Savings_Investments"].to_numpy(dtype=float), nan=0.0)
 
     eps = 1e-9
+    # income must be positive to define rates; otherwise drop that month via NaN
     inc_pos = np.where(np.isfinite(inc) & (inc > 0), inc, np.nan)
 
-    essentials_rate = (housing + utilities + groceries) / (inc_pos + eps)
+    # ---- Rates (0..~) ----
+    # Broader definitions so radar is visually interpretable
+    essentials_amt = housing + utilities + groceries + trans + auto + ins + med + edu + pets
+    discretionary_amt = dining + ent + subs + travel + cash
+
+    essentials_rate = essentials_amt / (inc_pos + eps)
     debt_rate = debt / (inc_pos + eps)
     savings_rate = savings / (inc_pos + eps)
-    discretionary_rate = (dining + ent + subs + travel) / (inc_pos + eps)
+    discretionary_rate = discretionary_amt / (inc_pos + eps)
 
+    # Net flow here means: remaining share after ALL outflows (including savings and debt)
     net_flow_rate = (inc - outflows) / (inc_pos + eps)
-    net_flow_score = np.clip((net_flow_rate + 1.0) / 2.0, 0.0, 1.0)
 
+    # ---- Scores in [0,1], higher = better ----
+    net_flow_score = np.clip((net_flow_rate + 1.0) / 2.0, 0.0, 1.0)
     essentials_score = np.clip(1.0 - np.clip(essentials_rate, 0.0, 1.0), 0.0, 1.0)
     debt_score = np.clip(1.0 - np.clip(debt_rate, 0.0, 1.0), 0.0, 1.0)
     discretionary_score = np.clip(1.0 - np.clip(discretionary_rate, 0.0, 1.0), 0.0, 1.0)
     savings_score = np.clip(np.clip(savings_rate, 0.0, 1.0), 0.0, 1.0)
 
-    def pack(vals) -> list[dict[str, float]]:
+    def _safe_mean(a: np.ndarray) -> float:
+        return float(np.nanmean(a)) if a.size else 0.0
+
+    def _safe_std(a: np.ndarray) -> float:
+        # population std (ddof=0)
+        return float(np.nanstd(a, ddof=0)) if a.size > 1 else 0.0
+
+    def pack_level(vals01) -> list[dict[str, float]]:
+        # vals01: list of 5 values in [0,1]
         return [
-            {"metric": "Essentials", "v": float(_score_0_100(vals[0]))},
-            {"metric": "Debt", "v": float(_score_0_100(vals[1]))},
-            {"metric": "Savings", "v": float(_score_0_100(vals[2]))},
-            {"metric": "Discretionary", "v": float(_score_0_100(vals[3]))},
-            {"metric": "Net Flow", "v": float(_score_0_100(vals[4]))},
+            {"metric": "Essentials", "v": float(_score_0_100(vals01[0]))},
+            {"metric": "Debt", "v": float(_score_0_100(vals01[1]))},
+            {"metric": "Savings", "v": float(_score_0_100(vals01[2]))},
+            {"metric": "Discretionary", "v": float(_score_0_100(vals01[3]))},
+            {"metric": "Net Flow", "v": float(_score_0_100(vals01[4]))},
         ]
 
-    idx_last = len(df) - 1
-    snapshot = pack(
-        [
-            essentials_score[idx_last] if len(df) else 0,
-            debt_score[idx_last] if len(df) else 0,
-            savings_score[idx_last] if len(df) else 0,
-            discretionary_score[idx_last] if len(df) else 0,
-            net_flow_score[idx_last] if len(df) else 0,
-        ]
-    )
+    def pack_growth(deltas01) -> list[dict[str, float]]:
+        """
+        deltas01 are in [-1, +1] (since score is [0,1]).
+        Map to [0,100] with 50 = no change.
+        """
+        def to_0_100(delta: float) -> float:
+            if not np.isfinite(delta):
+                delta = 0.0
+            v = 50.0 + 50.0 * float(delta)
+            return float(np.clip(v, 0.0, 100.0))
 
-    w = min(3, len(df))
-    trend = pack(
-        [
-            float(np.nanmean(essentials_score[-w:])) if w else 0,
-            float(np.nanmean(debt_score[-w:])) if w else 0,
-            float(np.nanmean(savings_score[-w:])) if w else 0,
-            float(np.nanmean(discretionary_score[-w:])) if w else 0,
-            float(np.nanmean(net_flow_score[-w:])) if w else 0,
+        return [
+            {"metric": "Essentials", "v": to_0_100(deltas01[0])},
+            {"metric": "Debt", "v": to_0_100(deltas01[1])},
+            {"metric": "Savings", "v": to_0_100(deltas01[2])},
+            {"metric": "Discretionary", "v": to_0_100(deltas01[3])},
+            {"metric": "Net Flow", "v": to_0_100(deltas01[4])},
         ]
-    )
 
-    if len(df) > 0:
-        ess_m = float(np.nanmean(np.clip(essentials_rate, 0.0, 1.0)))
-        debt_m = float(np.nanmean(np.clip(debt_rate, 0.0, 1.0)))
-        disc_m = float(np.nanmean(np.clip(discretionary_rate, 0.0, 1.0)))
-        risk_safe = np.clip(1.0 - (0.55 * ess_m + 0.35 * debt_m + 0.10 * disc_m), 0.0, 1.0)
-        risk = pack(
-            [
-                np.clip(1.0 - ess_m, 0.0, 1.0),
-                np.clip(1.0 - debt_m, 0.0, 1.0),
-                float(np.nanmean(savings_score[-w:])) if w else 0.0,
-                np.clip(1.0 - disc_m, 0.0, 1.0),
-                risk_safe,
-            ]
-        )
+    n = len(df)
+
+    # ---------- Snapshot: latest month ----------
+    if n > 0:
+        i = n - 1
+        snapshot = pack_level([
+            essentials_score[i],
+            debt_score[i],
+            savings_score[i],
+            discretionary_score[i],
+            net_flow_score[i],
+        ])
     else:
-        risk = pack([0, 0, 0, 0, 0])
+        snapshot = pack_level([0, 0, 0, 0, 0])
 
-    growth = pack(
-        [
-            float(np.nanmean(essentials_score[-w:])) if w else 0,
-            float(np.nanmean(debt_score[-w:])) if w else 0,
-            float(np.nanmean(savings_score[-w:])) if w else 0,
-            float(np.nanmean(discretionary_score[-w:])) if w else 0,
-            float(np.nanmean(net_flow_score[-w:])) if w else 0,
+    # Window sizes (configurable)
+    W_trend = int(pipeline_config.get("radar_trend_window", 3))
+    W_growth = int(pipeline_config.get("radar_growth_window", 3))
+
+    w_tr = min(max(W_trend, 1), n) if n else 0
+    w_g = max(W_growth, 1)
+
+    # ---------- Trend: recent average (last w_tr months) ----------
+    if w_tr > 0:
+        trend = pack_level([
+            _safe_mean(essentials_score[-w_tr:]),
+            _safe_mean(debt_score[-w_tr:]),
+            _safe_mean(savings_score[-w_tr:]),
+            _safe_mean(discretionary_score[-w_tr:]),
+            _safe_mean(net_flow_score[-w_tr:]),
+        ])
+    else:
+        trend = pack_level([0, 0, 0, 0, 0])
+
+    # ---------- Risk: stability across all months ----------
+    # Conservative level = mean(score) - std(score)
+    if n > 0:
+        risk_vals = [
+            float(np.clip(_safe_mean(essentials_score) - _safe_std(essentials_score), 0.0, 1.0)),
+            float(np.clip(_safe_mean(debt_score) - _safe_std(debt_score), 0.0, 1.0)),
+            float(np.clip(_safe_mean(savings_score) - _safe_std(savings_score), 0.0, 1.0)),
+            float(np.clip(_safe_mean(discretionary_score) - _safe_std(discretionary_score), 0.0, 1.0)),
+            float(np.clip(_safe_mean(net_flow_score) - _safe_std(net_flow_score), 0.0, 1.0)),
         ]
-    )
+        risk = pack_level(risk_vals)
+    else:
+        risk = pack_level([0, 0, 0, 0, 0])
+
+    # ---------- Growth: momentum ----------
+    # Compare last w_g months vs the w_g months before them (if possible).
+    # Otherwise fall back to last month vs first month.
+    if n >= 2 * w_g:
+        recent = (
+            _safe_mean(essentials_score[-w_g:]),
+            _safe_mean(debt_score[-w_g:]),
+            _safe_mean(savings_score[-w_g:]),
+            _safe_mean(discretionary_score[-w_g:]),
+            _safe_mean(net_flow_score[-w_g:]),
+        )
+        prior = (
+            _safe_mean(essentials_score[-2 * w_g: -w_g]),
+            _safe_mean(debt_score[-2 * w_g: -w_g]),
+            _safe_mean(savings_score[-2 * w_g: -w_g]),
+            _safe_mean(discretionary_score[-2 * w_g: -w_g]),
+            _safe_mean(net_flow_score[-2 * w_g: -w_g]),
+        )
+        deltas = [recent[i] - prior[i] for i in range(5)]
+        growth = pack_growth(deltas)
+    elif n >= 2:
+        deltas = [
+            float(essentials_score[-1] - essentials_score[0]),
+            float(debt_score[-1] - debt_score[0]),
+            float(savings_score[-1] - savings_score[0]),
+            float(discretionary_score[-1] - discretionary_score[0]),
+            float(net_flow_score[-1] - net_flow_score[0]),
+        ]
+        growth = pack_growth(deltas)
+    else:
+        growth = pack_growth([0, 0, 0, 0, 0])
 
     return {"snapshot": snapshot, "trend": trend, "risk": risk, "growth": growth}
 
