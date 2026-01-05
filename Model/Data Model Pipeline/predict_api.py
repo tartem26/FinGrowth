@@ -469,8 +469,8 @@ def _radar_from_month_df(df: pd.DataFrame) -> dict[str, list[dict[str, float]]]:
             {"metric": "Essentials", "v": float(_score_0_100(vals01[0]))},
             {"metric": "Debt", "v": float(_score_0_100(vals01[1]))},
             {"metric": "Savings", "v": float(_score_0_100(vals01[2]))},
-            {"metric": "Discretionary", "v": float(_score_0_100(vals01[3]))},
-            {"metric": "Net Flow", "v": float(_score_0_100(vals01[4]))},
+            {"metric": "Fun", "v": float(_score_0_100(vals01[3]))},
+            {"metric": "Left", "v": float(_score_0_100(vals01[4]))},
         ]
 
     def pack_growth(deltas01) -> list[dict[str, float]]:
@@ -488,8 +488,8 @@ def _radar_from_month_df(df: pd.DataFrame) -> dict[str, list[dict[str, float]]]:
             {"metric": "Essentials", "v": to_0_100(deltas01[0])},
             {"metric": "Debt", "v": to_0_100(deltas01[1])},
             {"metric": "Savings", "v": to_0_100(deltas01[2])},
-            {"metric": "Discretionary", "v": to_0_100(deltas01[3])},
-            {"metric": "Net Flow", "v": to_0_100(deltas01[4])},
+            {"metric": "Fun", "v": to_0_100(deltas01[3])},
+            {"metric": "Left", "v": to_0_100(deltas01[4])},
         ]
 
     n = len(df)

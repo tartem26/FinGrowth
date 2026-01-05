@@ -566,22 +566,22 @@ export default function FinGrowthDashboard() {
           {/* Row 1: ONLY 4 radars, full width */}
           <Grid container spacing={{ xs: 2.2, md: 2.6 }} sx={{ width: "100%" }}>
             <Grid item xs={12} sm={6} lg={3} sx={{ width: "23%", alignSelf: "stretch" }}>
-              <GlassCard title="Radar · Snapshot" subtitle="Last saved month profile" height={420}>
+              <GlassCard title="Radar · Snapshot" subtitle="Last saved month profile" height={360}>
                 <RadarPanel data={radar1} />
               </GlassCard>
             </Grid>
             <Grid item xs={12} sm={6} lg={3} sx={{ width: "23%", alignSelf: "stretch" }}>
-              <GlassCard title="Radar · Trend" subtitle="Rolling behavior signals" height={420}>
+              <GlassCard title="Radar · Trend" subtitle="Rolling behavior signals" height={360}>
                 <RadarPanel data={radar2} />
               </GlassCard>
             </Grid>
             <Grid item xs={12} sm={6} lg={3} sx={{ width: "23%", alignSelf: "stretch" }}>
-              <GlassCard title="Radar · Risk" subtitle="Debt & essentials pressure" height={420}>
+              <GlassCard title="Radar · Risk" subtitle="Debt & essentials pressure" height={360}>
                 <RadarPanel data={radar3} />
               </GlassCard>
             </Grid>
             <Grid item xs={12} sm={6} lg={3} sx={{ width: "23%", alignSelf: "stretch" }}>
-              <GlassCard title="Radar · Growth" subtitle="Savings momentum" height={420}>
+              <GlassCard title="Radar · Growth" subtitle="Savings momentum" height={360}>
                 <RadarPanel data={radar4} />
               </GlassCard>
             </Grid>
@@ -674,7 +674,7 @@ function RadarPanel({ data }) {
 
   return (
     <ResponsiveContainer width="100%" height="100%">
-      <RadarChart data={data} outerRadius="88%">
+      <RadarChart data={data} outerRadius="74.5%">
         <PolarGrid strokeOpacity={0.25} />
         <PolarAngleAxis dataKey="metric" tick={{ fontSize: 12 }} />
         <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 10 }} />
