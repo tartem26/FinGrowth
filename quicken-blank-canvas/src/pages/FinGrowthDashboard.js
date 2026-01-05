@@ -431,8 +431,8 @@ export default function FinGrowthDashboard() {
   const [rows, setRows] = useState(() => [emptyRow()]);
   const [savedAt, setSavedAt] = useState(null);
   const [clusterResult, setClusterResult] = useState(() => ({
-    top: 3,
-    probs: [0.06, 0.10, 0.12, 0.52, 0.14, 0.06],
+    top: 0,
+    probs: [0.00, 0.00, 0.00, 0.00, 0.00, 0.00],
   }));
   const [apiBusy, setApiBusy] = useState(false);
   const [analysis, setAnalysis] = useState(null);
