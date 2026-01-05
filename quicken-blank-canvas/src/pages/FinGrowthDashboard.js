@@ -925,7 +925,7 @@ function MonthRow({ index, row, onChange, onDelete, canDelete, onAutofill }) {
                 onClose={closeAutofillMenu}
                 PaperProps={{
                 sx: {
-                    borderRadius: 16,
+                    borderRadius: 8,
                     border: "1px solid rgba(15, 23, 42, 0.10)",
                     boxShadow: TOKENS.shadow,
                     overflow: "hidden",
