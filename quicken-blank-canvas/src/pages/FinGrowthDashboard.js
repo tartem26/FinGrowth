@@ -85,56 +85,6 @@ const CLUSTER_META = [
 const PREDICT_API_URL = "http://127.0.0.1:5055/predict";
 
 // -----------------------------
-// Mock chart data
-// -----------------------------
-function makeRadarData(seed = 0) {
-  const base = [
-    { metric: "Essentials", v: 62 },
-    { metric: "Debt", v: 35 },
-    { metric: "Savings", v: 55 },
-    { metric: "Discretionary", v: 40 },
-    { metric: "Net Flow", v: 58 },
-  ];
-  return base.map((d, i) => ({
-    ...d,
-    v: Math.max(10, Math.min(95, d.v + ((i + seed) % 3 === 0 ? 8 : -6) + (seed % 5))),
-  }));
-}
-
-function makeClusterScatter() {
-  // a simple 2D mock with 6 clusters
-  const pts = [];
-  const centers = [
-    [-2.2, -1.6],
-    [-1.2, 1.4],
-    [0.0, 0.2],
-    [1.6, 1.0],
-    [2.4, -0.6],
-    [0.8, -1.8],
-  ];
-  for (let k = 0; k < 6; k++) {
-    for (let i = 0; i < 80; i++) {
-      const cx = centers[k][0];
-      const cy = centers[k][1];
-      const x = cx + (Math.random() - 0.5) * 1.1;
-      const y = cy + (Math.random() - 0.5) * 1.1;
-      pts.push({ x, y, k });
-    }
-  }
-  return pts;
-}
-
-function makeNetworthSeries(months = 12) {
-  const out = [];
-  let net = 14500;
-  for (let i = 1; i <= months; i++) {
-    net += 400 + Math.random() * 350;
-    out.push({ month: i, networth: Math.round(net) });
-  }
-  return out;
-}
-
-// -----------------------------
 // Autofill month generator
 // -----------------------------
 function mulberry32(seed) {
