@@ -223,7 +223,7 @@ def _build_month_df(months: list[dict[str, Any]]) -> tuple[pd.DataFrame, list[st
         n_zero_or_missing_income = int((df["Income_Deposits"].fillna(0) <= 0).sum())
         if n_zero_or_missing_income > 0:
             warnings.append(
-                f"{n_zero_or_missing_income}/{len(df)} months have Income_Deposits <= 0 (shares / rates may collapse)."
+                f"{n_zero_or_missing_income}/{len(df)} months have Income_Deposits ≤ 0 (shares / rates may collapse)."
             )
 
     return df, warnings, missing_fields
@@ -694,7 +694,7 @@ def _build_conclusion(
         for k, sh in shares[:4]:
             drivers.append(f"{k} is {sh*100:.1f}% of income (latest month)")
     else:
-        drivers.append("Income_Deposits is missing or <= 0 in the latest month; drivers are less reliable.")
+        drivers.append("Income_Deposits is missing or ≤ 0 in the latest month; drivers are less reliable.")
 
     txt = (
         f"Model predicts cluster C{top + 1} with {top_prob*100:.1f}% confidence "

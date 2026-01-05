@@ -332,7 +332,7 @@ def category_bounds(cluster_name: str, cat: str, income_monthly: float) -> Tuple
     floor = max(abs_floor, pct_lo * income_monthly)
     cap = max(abs_cap, pct_hi * income_monthly)
 
-    # Ensure cap >= floor
+    # Ensure cap ≥ floor
     cap = max(cap, floor)
     return float(floor), float(cap)
 

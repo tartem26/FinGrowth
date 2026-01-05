@@ -85,6 +85,68 @@ const CLUSTER_META = [
 const PREDICT_API_URL = "http://127.0.0.1:5055/predict";
 
 // -----------------------------
+// Human-readable labels for backend strings (drivers, missing fields, warnings)
+// -----------------------------
+const FIELD_LABEL_MAP = (() => {
+  // start from the UI labels
+  const m = {};
+  for (const c of CATEGORIES_17) m[c.key] = c.label;
+
+  // overrides to match chosen wording / readability
+  m.Entertainment = "Fun";
+
+  // legacy / alternate keys that backend might emit in strings
+  m.Transportation_Gas = "Gas";
+  m.Transportation_PublicTransit = "Transit";
+  m.Insurance_Health = "Health Ins.";
+  m.Insurance_Auto = "Auto Ins.";
+  m.Medical_OutOfPocket = "Healthcare OOP";
+  m.Cash_ATM_Misc = m.Cash_ATM_MiscTransfers || "Cash/ATM/Misc";
+  return m;
+})();
+
+const FIELD_KEYS_SORTED = Object.keys(FIELD_LABEL_MAP).sort((a, b) => b.length - a.length);
+
+function labelForFieldKey(k) {
+  if (!k) return "";
+  const key = String(k).trim();
+  return FIELD_LABEL_MAP[key] || key.replace(/_/g, " ");
+}
+
+function replaceKnownKeysInText(text) {
+  let s = String(text ?? "");
+  // Replace longer keys first to avoid partial overlaps
+  for (const k of FIELD_KEYS_SORTED) {
+    // replaceAll exists in modern browsers; fallback to split/join for safety
+    s = s.split(k).join(labelForFieldKey(k));
+  }
+  return s;
+}
+
+function prettifyBackendLine(line) {
+  if (line == null) return "";
+
+  const s = String(line);
+
+  // Most drivers: "<KEY> is 25.5% of income ..."
+  const isIdx = s.indexOf(" is ");
+  if (isIdx > 0) {
+    const key = s.slice(0, isIdx);
+    return `${labelForFieldKey(key)}${s.slice(isIdx)}`;
+  }
+
+  // Missing fields: "<KEY> (missing in 1/3 months)"
+  const parIdx = s.indexOf(" (");
+  if (parIdx > 0) {
+    const key = s.slice(0, parIdx);
+    return `${labelForFieldKey(key)}${s.slice(parIdx)}`;
+  }
+
+  // Fallback: replace any known keys anywhere in the line
+  return replaceKnownKeysInText(s);
+}
+
+// -----------------------------
 // Autofill month generator
 // -----------------------------
 function mulberry32(seed) {
@@ -956,6 +1018,10 @@ function ResultsPanel({ clusterResult, conclusion, warnings, apiError }) {
 
   const drivers = Array.isArray(conclusion?.drivers) ? conclusion.drivers : [];
   const missing = Array.isArray(conclusion?.missing_fields) ? conclusion.missing_fields : [];
+  const prettyWarnings = Array.isArray(warnings) ? warnings.map(prettifyBackendLine) : [];
+
+  const prettyDrivers = drivers.map(prettifyBackendLine);
+  const prettyMissing = missing.map(prettifyBackendLine);
 
   return (
     <Card
@@ -1004,7 +1070,7 @@ function ResultsPanel({ clusterResult, conclusion, warnings, apiError }) {
               ) : null}
 
               {/* Server warnings (muted yellow) */}
-              {Array.isArray(warnings) && warnings.length ? (
+              {prettyWarnings.length ? (
                 <Box
                   sx={{
                     mt: 1.0,
@@ -1018,7 +1084,7 @@ function ResultsPanel({ clusterResult, conclusion, warnings, apiError }) {
                     Warnings
                   </Typography>
                   <Box sx={{ mt: 0.6 }}>
-                    {warnings.map((w, i) => (
+                    {prettyWarnings.map((w, i) => (
                       <Typography key={i} variant="caption" sx={{ display: "block", color: "rgba(146,64,14,0.92)" }}>
                         • {w}
                       </Typography>
@@ -1058,7 +1124,7 @@ function ResultsPanel({ clusterResult, conclusion, warnings, apiError }) {
           <Divider sx={{ opacity: 0.25 }} />
 
           {/* Drivers section: between conclusion text and probability tiles */}
-          {(drivers.length || missing.length) ? (
+          {(prettyDrivers.length || prettyMissing.length) ? (
             <Box
               sx={{
                 borderRadius: 8,
@@ -1068,11 +1134,11 @@ function ResultsPanel({ clusterResult, conclusion, warnings, apiError }) {
               }}
             >
               <Stack spacing={1.0}>
-                {drivers.length ? (
+                {prettyDrivers.length ? (
                   <Box>
                     <Typography sx={{ fontWeight: 900, fontSize: 14 }}>Top drivers</Typography>
                     <Box sx={{ mt: 0.6 }}>
-                      {drivers.map((d, i) => (
+                      {prettyDrivers.map((d, i) => (
                         <Typography key={i} variant="caption" sx={{ display: "block", opacity: 0.82 }}>
                           • {d}
                         </Typography>
@@ -1081,20 +1147,20 @@ function ResultsPanel({ clusterResult, conclusion, warnings, apiError }) {
                   </Box>
                 ) : null}
 
-                {missing.length ? (
+                {prettyMissing.length ? (
                   <Box>
-                    <Typography sx={{ fontWeight: 900, fontSize: 14, mt: drivers.length ? 0.6 : 0 }}>
+                    <Typography sx={{ fontWeight: 900, fontSize: 14, mt: prettyDrivers.length ? 0.6 : 0 }}>
                       Missing fields
                     </Typography>
                     <Box sx={{ mt: 0.6 }}>
-                      {missing.slice(0, 6).map((m, i) => (
+                      {prettyMissing.slice(0, 6).map((m, i) => (
                         <Typography key={i} variant="caption" sx={{ display: "block", opacity: 0.78 }}>
                           • {m}
                         </Typography>
                       ))}
-                      {missing.length > 6 ? (
+                      {prettyMissing.length > 6 ? (
                         <Typography variant="caption" sx={{ display: "block", opacity: 0.65 }}>
-                          +{missing.length - 6} more
+                          +{prettyMissing.length - 6} more
                         </Typography>
                       ) : null}
                     </Box>
