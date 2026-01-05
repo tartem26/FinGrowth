@@ -954,6 +954,9 @@ function ResultsPanel({ clusterResult, conclusion, warnings, apiError }) {
 
   const topProb = probs.length ? Math.max(...probs) : 0;
 
+  const drivers = Array.isArray(conclusion?.drivers) ? conclusion.drivers : [];
+  const missing = Array.isArray(conclusion?.missing_fields) ? conclusion.missing_fields : [];
+
   return (
     <Card
       elevation={0}
@@ -980,21 +983,47 @@ function ResultsPanel({ clusterResult, conclusion, warnings, apiError }) {
                 After Save, FinGrowth shows the predicted financial clusters with their probabilistic breakdown.
               </Typography>
 
-              {/* API error */}
+              {/* API error (red) */}
               {apiError ? (
-                <Typography sx={{ mt: 1.0, color: "rgba(244,63,94,0.95)", fontWeight: 800 }}>
-                  {apiError}
-                </Typography>
+                <Box
+                  sx={{
+                    mt: 1.2,
+                    p: 1.2,
+                    borderRadius: 5,
+                    border: "1px solid rgba(244,63,94,0.35)",
+                    background: "rgba(244,63,94,0.08)",
+                  }}
+                >
+                  <Typography sx={{ color: "rgba(190,18,60,0.98)", fontWeight: 900, fontSize: 13 }}>
+                    Error
+                  </Typography>
+                  <Typography sx={{ mt: 0.4, color: "rgba(190,18,60,0.95)", fontWeight: 800 }}>
+                    {apiError}
+                  </Typography>
+                </Box>
               ) : null}
 
-              {/* Server warnings */}
+              {/* Server warnings (muted yellow) */}
               {Array.isArray(warnings) && warnings.length ? (
-                <Box sx={{ mt: 1.0 }}>
-                  {warnings.map((w, i) => (
-                    <Typography key={i} variant="caption" sx={{ display: "block", opacity: 0.75 }}>
-                      • {w}
-                    </Typography>
-                  ))}
+                <Box
+                  sx={{
+                    mt: 1.0,
+                    p: 1.2,
+                    borderRadius: 5,
+                    border: "1px solid rgba(245,158,11,0.35)",
+                    background: "rgba(245,158,11,0.10)",
+                  }}
+                >
+                  <Typography sx={{ color: "rgba(146,64,14,0.98)", fontWeight: 900, fontSize: 13 }}>
+                    Warnings
+                  </Typography>
+                  <Box sx={{ mt: 0.6 }}>
+                    {warnings.map((w, i) => (
+                      <Typography key={i} variant="caption" sx={{ display: "block", color: "rgba(146,64,14,0.92)" }}>
+                        • {w}
+                      </Typography>
+                    ))}
+                  </Box>
                 </Box>
               ) : null}
 
@@ -1027,6 +1056,53 @@ function ResultsPanel({ clusterResult, conclusion, warnings, apiError }) {
           </Stack>
 
           <Divider sx={{ opacity: 0.25 }} />
+
+          {/* Drivers section: between conclusion text and probability tiles */}
+          {(drivers.length || missing.length) ? (
+            <Box
+              sx={{
+                borderRadius: 8,
+                border: "1px solid rgba(15, 23, 42, 0.10)",
+                background: "rgba(255,255,255,0.70)",
+                p: { xs: 1.6, md: 1.8 },
+              }}
+            >
+              <Stack spacing={1.0}>
+                {drivers.length ? (
+                  <Box>
+                    <Typography sx={{ fontWeight: 900, fontSize: 14 }}>Top drivers</Typography>
+                    <Box sx={{ mt: 0.6 }}>
+                      {drivers.map((d, i) => (
+                        <Typography key={i} variant="caption" sx={{ display: "block", opacity: 0.82 }}>
+                          • {d}
+                        </Typography>
+                      ))}
+                    </Box>
+                  </Box>
+                ) : null}
+
+                {missing.length ? (
+                  <Box>
+                    <Typography sx={{ fontWeight: 900, fontSize: 14, mt: drivers.length ? 0.6 : 0 }}>
+                      Missing fields
+                    </Typography>
+                    <Box sx={{ mt: 0.6 }}>
+                      {missing.slice(0, 6).map((m, i) => (
+                        <Typography key={i} variant="caption" sx={{ display: "block", opacity: 0.78 }}>
+                          • {m}
+                        </Typography>
+                      ))}
+                      {missing.length > 6 ? (
+                        <Typography variant="caption" sx={{ display: "block", opacity: 0.65 }}>
+                          +{missing.length - 6} more
+                        </Typography>
+                      ) : null}
+                    </Box>
+                  </Box>
+                ) : null}
+              </Stack>
+            </Box>
+          ) : null}
 
           {probs.length ? (
             <Grid container spacing={{ xs: 1.2, md: 1.6 }}>
