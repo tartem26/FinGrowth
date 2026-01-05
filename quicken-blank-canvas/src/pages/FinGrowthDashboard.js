@@ -56,19 +56,19 @@ const TOKENS = {
 const CATEGORIES_17 = [
   { key: "Income_Deposits", label: "Income" },
   { key: "Housing", label: "Housing" },
-  { key: "Utilities_Telecom", label: "Utilities" },
+  { key: "Utilities_Telecom", label: "Utilities/Telecom" },
   { key: "Groceries_FoodAtHome", label: "Groceries" },
   { key: "Dining_FoodAway", label: "Dining" },
-  { key: "Transportation_Gas", label: "Gas" },
-  { key: "Transportation_PublicTransit", label: "Transit" },
-  { key: "Insurance_Health", label: "Health Ins" },
-  { key: "Insurance_Auto", label: "Auto Ins" },
-  { key: "Medical_OutOfPocket", label: "Medical" },
+  { key: "Transportation_Variable", label: "Transport (var)" },
+  { key: "Auto_Costs", label: "Auto Costs" },
+  { key: "Healthcare_OOP", label: "Healthcare OOP" },
+  { key: "Insurance_All", label: "Insurance (All)" },
   { key: "Debt_Payments", label: "Debt" },
   { key: "Savings_Investments", label: "Savings" },
   { key: "Education_Childcare", label: "Edu/Child" },
-  { key: "Entertainment", label: "Fun" },
-  { key: "Subscriptions_Memberships", label: "Subs" },
+  { key: "Entertainment", label: "Entertainment" },
+  { key: "Subscriptions_Memberships", label: "Subscriptions" },
+  { key: "Cash_ATM_MiscTransfers", label: "Cash/ATM/Misc" },
   { key: "Pets", label: "Pets" },
   { key: "Travel", label: "Travel" },
 ];
@@ -85,7 +85,7 @@ const CLUSTER_META = [
 const PREDICT_API_URL = "http://127.0.0.1:5055/predict";
 
 // -----------------------------
-// Mock chart data (UI-only)
+// Mock chart data
 // -----------------------------
 function makeRadarData(seed = 0) {
   const base = [
@@ -135,7 +135,7 @@ function makeNetworthSeries(months = 12) {
 }
 
 // -----------------------------
-// Autofill month generator (UI-only)
+// Autofill month generator
 // -----------------------------
 function mulberry32(seed) {
   // small deterministic rng so autofill feels stable
@@ -169,7 +169,7 @@ function buildAutofillMonth(clusterIdx, monthIndex) {
 
   const INCOME_KEY = "Income_Deposits";
 
-  // monthly income ranges (same idea as your clusters)
+  // monthly income ranges
   const incomeRanges = [
     [1200, 2200],
     [2300, 4200],
@@ -188,93 +188,143 @@ function buildAutofillMonth(clusterIdx, monthIndex) {
     if (c.key !== INCOME_KEY) shares[c.key] = 0.0;
   }
 
-  // quick “shape templates” per cluster (UI-only)
+  // Convenience aliases
+  const K = {
+    Housing: "Housing",
+    Utilities: "Utilities_Telecom",
+    Groceries: "Groceries_FoodAtHome",
+    Dining: "Dining_FoodAway",
+    Transport: "Transportation_Variable",
+    Auto: "Auto_Costs",
+    Health: "Healthcare_OOP",
+    Insurance: "Insurance_All",
+    Debt: "Debt_Payments",
+    Savings: "Savings_Investments",
+    Edu: "Education_Childcare",
+    Fun: "Entertainment",
+    Subs: "Subscriptions_Memberships",
+    Cash: "Cash_ATM_MiscTransfers",
+    Pets: "Pets",
+    Travel: "Travel",
+  };
+
+  // shape templates per cluster
+  // cap = total share of outflows relative to income
   let cap = 0.86;
 
   if (clusterIdx === 0) {
-    shares.Housing = rBetween(rng, 0.35, 0.50);
-    shares.Utilities_Telecom = rBetween(rng, 0.06, 0.10);
-    shares.Groceries_FoodAtHome = rBetween(rng, 0.10, 0.18);
-    shares.Debt_Payments = rBetween(rng, 0.10, 0.22);
-    shares.Savings_Investments = rBetween(rng, 0.00, 0.03);
-    shares.Dining_FoodAway = rBetween(rng, 0.01, 0.05);
-    shares.Entertainment = rBetween(rng, 0.00, 0.02);
-    shares.Travel = rBetween(rng, 0.00, 0.01);
-    shares.Subscriptions_Memberships = rBetween(rng, 0.00, 0.01);
-    cap = rBetween(rng, 0.86, 0.94);
+    // low: essentials and debt heavy with little savings
+    shares[K.Housing] = rBetween(rng, 0.36, 0.52);
+    shares[K.Utilities] = rBetween(rng, 0.06, 0.11);
+    shares[K.Groceries] = rBetween(rng, 0.11, 0.20);
+    shares[K.Transport] = rBetween(rng, 0.05, 0.10);
+    shares[K.Insurance] = rBetween(rng, 0.04, 0.08);
+    shares[K.Health] = rBetween(rng, 0.01, 0.05);
+    shares[K.Debt] = rBetween(rng, 0.10, 0.24);
+    shares[K.Savings] = rBetween(rng, 0.00, 0.03);
+    shares[K.Dining] = rBetween(rng, 0.01, 0.05);
+    shares[K.Fun] = rBetween(rng, 0.00, 0.02);
+    shares[K.Travel] = rBetween(rng, 0.00, 0.01);
+    shares[K.Subs] = rBetween(rng, 0.00, 0.01);
+    shares[K.Cash] = rBetween(rng, 0.00, 0.03);
+    cap = rBetween(rng, 0.86, 0.95);
   } else if (clusterIdx === 1) {
-    shares.Housing = rBetween(rng, 0.30, 0.42);
-    shares.Utilities_Telecom = rBetween(rng, 0.05, 0.09);
-    shares.Groceries_FoodAtHome = rBetween(rng, 0.09, 0.15);
-    shares.Debt_Payments = rBetween(rng, 0.08, 0.18);
-    shares.Savings_Investments = rBetween(rng, 0.02, 0.08);
-    shares.Dining_FoodAway = rBetween(rng, 0.02, 0.06);
-    shares.Entertainment = rBetween(rng, 0.00, 0.03);
-    shares.Travel = rBetween(rng, 0.00, 0.02);
-    shares.Subscriptions_Memberships = rBetween(rng, 0.00, 0.02);
-    cap = rBetween(rng, 0.82, 0.92);
+    shares[K.Housing] = rBetween(rng, 0.30, 0.45);
+    shares[K.Utilities] = rBetween(rng, 0.05, 0.10);
+    shares[K.Groceries] = rBetween(rng, 0.09, 0.16);
+    shares[K.Transport] = rBetween(rng, 0.05, 0.10);
+    shares[K.Insurance] = rBetween(rng, 0.04, 0.08);
+    shares[K.Health] = rBetween(rng, 0.01, 0.05);
+    shares[K.Debt] = rBetween(rng, 0.08, 0.18);
+    shares[K.Savings] = rBetween(rng, 0.02, 0.08);
+    shares[K.Dining] = rBetween(rng, 0.02, 0.07);
+    shares[K.Fun] = rBetween(rng, 0.00, 0.03);
+    shares[K.Travel] = rBetween(rng, 0.00, 0.02);
+    shares[K.Subs] = rBetween(rng, 0.00, 0.02);
+    shares[K.Cash] = rBetween(rng, 0.01, 0.04);
+    cap = rBetween(rng, 0.82, 0.93);
   } else if (clusterIdx === 2) {
-    shares.Housing = rBetween(rng, 0.25, 0.36);
-    shares.Utilities_Telecom = rBetween(rng, 0.04, 0.08);
-    shares.Groceries_FoodAtHome = rBetween(rng, 0.07, 0.12);
-    shares.Debt_Payments = rBetween(rng, 0.04, 0.12);
-    shares.Savings_Investments = rBetween(rng, 0.08, 0.16);
-    shares.Dining_FoodAway = rBetween(rng, 0.03, 0.08);
-    shares.Entertainment = rBetween(rng, 0.01, 0.04);
-    shares.Travel = rBetween(rng, 0.00, 0.04);
-    shares.Subscriptions_Memberships = rBetween(rng, 0.005, 0.02);
+    shares[K.Housing] = rBetween(rng, 0.24, 0.36);
+    shares[K.Utilities] = rBetween(rng, 0.04, 0.08);
+    shares[K.Groceries] = rBetween(rng, 0.07, 0.13);
+    shares[K.Transport] = rBetween(rng, 0.04, 0.09);
+    shares[K.Insurance] = rBetween(rng, 0.03, 0.07);
+    shares[K.Health] = rBetween(rng, 0.01, 0.05);
+    shares[K.Debt] = rBetween(rng, 0.04, 0.12);
+    shares[K.Savings] = rBetween(rng, 0.08, 0.18);
+    shares[K.Dining] = rBetween(rng, 0.03, 0.09);
+    shares[K.Fun] = rBetween(rng, 0.01, 0.04);
+    shares[K.Travel] = rBetween(rng, 0.00, 0.04);
+    shares[K.Subs] = rBetween(rng, 0.005, 0.02);
+    shares[K.Cash] = rBetween(rng, 0.01, 0.05);
     cap = rBetween(rng, 0.78, 0.90);
   } else if (clusterIdx === 3) {
-    shares.Housing = rBetween(rng, 0.20, 0.32);
-    shares.Utilities_Telecom = rBetween(rng, 0.03, 0.07);
-    shares.Groceries_FoodAtHome = rBetween(rng, 0.06, 0.11);
-    shares.Debt_Payments = rBetween(rng, 0.02, 0.08);
-    shares.Savings_Investments = rBetween(rng, 0.14, 0.28);
-    shares.Dining_FoodAway = rBetween(rng, 0.03, 0.09);
-    shares.Entertainment = rBetween(rng, 0.01, 0.05);
-    shares.Travel = rBetween(rng, 0.01, 0.06);
-    shares.Subscriptions_Memberships = rBetween(rng, 0.01, 0.03);
+    shares[K.Housing] = rBetween(rng, 0.20, 0.32);
+    shares[K.Utilities] = rBetween(rng, 0.03, 0.07);
+    shares[K.Groceries] = rBetween(rng, 0.06, 0.11);
+    shares[K.Transport] = rBetween(rng, 0.03, 0.08);
+    shares[K.Insurance] = rBetween(rng, 0.03, 0.06);
+    shares[K.Health] = rBetween(rng, 0.01, 0.04);
+    shares[K.Debt] = rBetween(rng, 0.02, 0.08);
+    shares[K.Savings] = rBetween(rng, 0.14, 0.30);
+    shares[K.Dining] = rBetween(rng, 0.03, 0.10);
+    shares[K.Fun] = rBetween(rng, 0.01, 0.05);
+    shares[K.Travel] = rBetween(rng, 0.01, 0.06);
+    shares[K.Subs] = rBetween(rng, 0.01, 0.03);
+    shares[K.Cash] = rBetween(rng, 0.01, 0.05);
     cap = rBetween(rng, 0.72, 0.88);
   } else if (clusterIdx === 4) {
-    shares.Housing = rBetween(rng, 0.14, 0.26);
-    shares.Utilities_Telecom = rBetween(rng, 0.02, 0.06);
-    shares.Groceries_FoodAtHome = rBetween(rng, 0.04, 0.09);
-    shares.Debt_Payments = rBetween(rng, 0.00, 0.05);
-    shares.Savings_Investments = rBetween(rng, 0.20, 0.35);
-    shares.Dining_FoodAway = rBetween(rng, 0.04, 0.10);
-    shares.Entertainment = rBetween(rng, 0.02, 0.06);
-    shares.Travel = rBetween(rng, 0.02, 0.08);
-    shares.Subscriptions_Memberships = rBetween(rng, 0.01, 0.04);
+    shares[K.Housing] = rBetween(rng, 0.14, 0.26);
+    shares[K.Utilities] = rBetween(rng, 0.02, 0.06);
+    shares[K.Groceries] = rBetween(rng, 0.04, 0.09);
+    shares[K.Transport] = rBetween(rng, 0.02, 0.06);
+    shares[K.Insurance] = rBetween(rng, 0.02, 0.05);
+    shares[K.Health] = rBetween(rng, 0.01, 0.03);
+    shares[K.Debt] = rBetween(rng, 0.00, 0.05);
+    shares[K.Savings] = rBetween(rng, 0.20, 0.36);
+    shares[K.Dining] = rBetween(rng, 0.04, 0.10);
+    shares[K.Fun] = rBetween(rng, 0.02, 0.06);
+    shares[K.Travel] = rBetween(rng, 0.02, 0.08);
+    shares[K.Subs] = rBetween(rng, 0.01, 0.04);
+    shares[K.Cash] = rBetween(rng, 0.01, 0.06);
     cap = rBetween(rng, 0.65, 0.85);
   } else {
-    shares.Housing = rBetween(rng, 0.08, 0.18);
-    shares.Utilities_Telecom = rBetween(rng, 0.01, 0.04);
-    shares.Groceries_FoodAtHome = rBetween(rng, 0.03, 0.08);
-    shares.Debt_Payments = rBetween(rng, 0.00, 0.03);
-    shares.Savings_Investments = rBetween(rng, 0.25, 0.45);
-    shares.Dining_FoodAway = rBetween(rng, 0.04, 0.10);
-    shares.Entertainment = rBetween(rng, 0.02, 0.08);
-    shares.Travel = rBetween(rng, 0.03, 0.12);
-    shares.Subscriptions_Memberships = rBetween(rng, 0.02, 0.06);
+    // top: high savings and more discretionary
+    shares[K.Housing] = rBetween(rng, 0.08, 0.18);
+    shares[K.Utilities] = rBetween(rng, 0.01, 0.04);
+    shares[K.Groceries] = rBetween(rng, 0.03, 0.08);
+    shares[K.Transport] = rBetween(rng, 0.02, 0.06);
+    shares[K.Auto] = rBetween(rng, 0.01, 0.05);      // more likely to have car payment/maintenance
+    shares[K.Insurance] = rBetween(rng, 0.02, 0.05);
+    shares[K.Health] = rBetween(rng, 0.01, 0.03);
+    shares[K.Debt] = rBetween(rng, 0.00, 0.03);
+    shares[K.Savings] = rBetween(rng, 0.25, 0.48);
+    shares[K.Dining] = rBetween(rng, 0.04, 0.12);
+    shares[K.Fun] = rBetween(rng, 0.02, 0.08);
+    shares[K.Travel] = rBetween(rng, 0.03, 0.12);
+    shares[K.Subs] = rBetween(rng, 0.02, 0.06);
+    shares[K.Cash] = rBetween(rng, 0.01, 0.06);
     cap = rBetween(rng, 0.55, 0.82);
   }
 
-  // light fill for the remaining categories so it doesn't look empty
+  // light fill so remaining categories aren't empty
   for (const k of [
-    "Transportation_Gas",
-    "Transportation_PublicTransit",
-    "Insurance_Health",
-    "Insurance_Auto",
-    "Medical_OutOfPocket",
-    "Pets",
-    "Education_Childcare",
+    K.Transport,
+    K.Auto,
+    K.Health,
+    K.Insurance,
+    K.Edu,
+    K.Pets,
+    K.Cash,
   ]) {
-    if (k in shares) shares[k] = rBetween(rng, 0.0, 0.06);
+    if (k in shares && (shares[k] || 0) === 0) {
+      shares[k] = rBetween(rng, 0.0, 0.06);
+    }
   }
 
   const capped = capShares(shares, cap);
 
-  // output as strings (TextField friendly)
+  // output as strings
   const out = {};
   out[INCOME_KEY] = String(Math.round(income));
 
@@ -385,14 +435,18 @@ export default function FinGrowthDashboard() {
     probs: [0.06, 0.10, 0.12, 0.52, 0.14, 0.06],
   }));
   const [apiBusy, setApiBusy] = useState(false);
+  const [analysis, setAnalysis] = useState(null);
+  const [apiError, setApiError] = useState(null);
 
-  const radar1 = useMemo(() => makeRadarData(1), [savedAt]);
-  const radar2 = useMemo(() => makeRadarData(2), [savedAt]);
-  const radar3 = useMemo(() => makeRadarData(3), [savedAt]);
-  const radar4 = useMemo(() => makeRadarData(4), [savedAt]);
+  const radar1 = analysis?.radars?.snapshot ?? [];
+  const radar2 = analysis?.radars?.trend ?? [];
+  const radar3 = analysis?.radars?.risk ?? [];
+  const radar4 = analysis?.radars?.growth ?? [];
 
-  const scatter = useMemo(() => makeClusterScatter(), []);
-  const networth = useMemo(() => makeNetworthSeries(24), [savedAt]);
+  const networth = analysis?.networth ?? [];              // [{month, networth}, ...]
+  const scatter = analysis?.cluster_space?.points ?? [];  // [{x,y,k,isUser?}, ...]
+  const conclusion = analysis?.conclusion ?? null;
+  const warnings = analysis?.warnings ?? [];
 
   function emptyRow() {
     const r = {};
@@ -426,22 +480,9 @@ export default function FinGrowthDashboard() {
     });
   }
 
-  // function onSave() {
-  //   // UI-only: mimic inference/heuristic update
-  //   const jitter = () => Math.random() * 0.08 - 0.04;
-  //   const base = [0.05, 0.07, 0.10, 0.55, 0.16, 0.07].map((p) =>
-  //     Math.max(0.01, Math.min(0.90, p + jitter()))
-  //   );
-  //   const sum = base.reduce((a, b) => a + b, 0);
-  //   const probs = base.map((p) => p / sum);
-  //   const top = probs.indexOf(Math.max(...probs));
-
-  //   setClusterResult({ top, probs });
-  //   setSavedAt(new Date());
-  // }
-
   async function onSave() {
     setApiBusy(true);
+    setApiError(null);
 
     try {
       const res = await fetch(PREDICT_API_URL, {
@@ -457,28 +498,51 @@ export default function FinGrowthDashboard() {
 
       const out = await res.json();
 
-      // expect: { top: number, probs: number[] }
+      // Must include top/probs at minimum
       if (!out || typeof out.top !== "number" || !Array.isArray(out.probs)) {
         throw new Error("Bad API response shape");
       }
 
+      // --- Normalize backend output into the exact shape as UI expects ---
+      // Backend: radars = { radar1, radar2, radar3, radar4 }
+      // UI expects: { snapshot, trend, risk, growth }
+      const normalizedRadars = {
+        snapshot: out.radars?.radar1 ?? [],
+        trend: out.radars?.radar2 ?? [],
+        risk: out.radars?.radar3 ?? [],
+        growth: out.radars?.radar4 ?? [],
+      };
+
+      // Backend: cluster_space = { points: [...], user_point: {...} }
+      // UI expects: a single points array, and it detects user point via `isUser: true`
+      const cloudPts = Array.isArray(out.cluster_space?.points)
+        ? out.cluster_space.points.map((p) => ({ ...p, isUser: false }))
+        : [];
+
+      const userPt = out.cluster_space?.user_point
+        ? [{ ...out.cluster_space.user_point, isUser: true }]
+        : [];
+
+      const normalizedClusterSpace = {
+        points: [...cloudPts, ...userPt],
+      };
+
+      const normalized = {
+        ...out,
+        radars: normalizedRadars,
+        networth: Array.isArray(out.networth) ? out.networth : [],
+        cluster_space: normalizedClusterSpace,
+        conclusion: out.conclusion ?? null,
+        warnings: Array.isArray(out.warnings) ? out.warnings : [],
+      };
+
       setClusterResult({ top: out.top, probs: out.probs });
+      setAnalysis(normalized); // charts come from backend only
       setSavedAt(new Date());
-      return;
     } catch (e) {
       console.error(e);
-
-      // UI-only: mimic inference/heuristic update
-      const jitter = () => Math.random() * 0.08 - 0.04;
-      const base = [0.05, 0.07, 0.10, 0.55, 0.16, 0.07].map((p) =>
-        Math.max(0.01, Math.min(0.90, p + jitter()))
-      );
-      const sum = base.reduce((a, b) => a + b, 0);
-      const probs = base.map((p) => p / sum);
-      const top = probs.indexOf(Math.max(...probs));
-
-      setClusterResult({ top, probs });
-      setSavedAt(new Date());
+      setApiError(e.message || String(e));
+      // No random fallback: keep previous charts/data
     } finally {
       setApiBusy(false);
     }
@@ -546,11 +610,11 @@ export default function FinGrowthDashboard() {
         </Toolbar>
       </AppBar>
 
-      {/* make the whole dashboard row-width bigger, so charts can actually grow */}
+      {/* make the whole dashboard row-width bigger, so charts can grow */}
       <Container  sx={{ py: { xs: 3.2, md: 4.2 }, px: { xs: 2, md: 3, lg: 6 } }}>
         {/* strict layout: 4 rows only, no mixing */}
         <Stack spacing={{ xs: 2.4, md: 3.0 }} alignItems="center">
-          {/* Row 1: ONLY 4 radars (full width) */}
+          {/* Row 1: ONLY 4 radars, full width */}
           <Grid container spacing={{ xs: 2.2, md: 2.6 }} sx={{ width: "100%" }}>
             <Grid item xs={12} sm={6} lg={3} sx={{ width: "23%", alignSelf: "stretch" }}>
               <GlassCard title="Radar · Snapshot" subtitle="Last saved month profile" height={420}>
@@ -600,7 +664,7 @@ export default function FinGrowthDashboard() {
             </Grid>
           </Grid>
 
-          {/* Row 3: ONLY monthly inputs (full width) */}
+          {/* Row 3: ONLY monthly inputs, full width */}
           <GlassCard
             title="Monthly inputs"
             subtitle="Add 1+ months. More months → better trajectory estimation."
@@ -629,7 +693,12 @@ export default function FinGrowthDashboard() {
           </GlassCard>
 
           {/* Row 4: ONLY conclusion */}
-          <ResultsPanel clusterResult={clusterResult} />
+          <ResultsPanel
+            clusterResult={clusterResult}
+            conclusion={conclusion}
+            warnings={warnings}
+            apiError={apiError}
+          />
         </Stack>
       </Container>
 
@@ -646,6 +715,14 @@ export default function FinGrowthDashboard() {
 // Charts
 // -----------------------------
 function RadarPanel({ data }) {
+  if (!data || data.length === 0) {
+    return (
+      <Box sx={{ height: "100%", display: "grid", placeItems: "center", opacity: 0.7 }}>
+        <Typography variant="caption">Save to compute radar chart</Typography>
+      </Box>
+    );
+  }
+
   return (
     <ResponsiveContainer width="100%" height="100%">
       <RadarChart data={data} outerRadius="88%">
@@ -660,15 +737,25 @@ function RadarPanel({ data }) {
 }
 
 function ClusterScatterPanel({ data }) {
-  // Split by cluster for legend and styling
+  const userPts = useMemo(() => data.filter((p) => p.isUser), [data]);
+  const cloudPts = useMemo(() => data.filter((p) => !p.isUser), [data]);
+
   const grouped = useMemo(() => {
     const g = new Map();
-    for (const p of data) {
+    for (const p of cloudPts) {
       if (!g.has(p.k)) g.set(p.k, []);
       g.get(p.k).push(p);
     }
     return [...g.entries()].sort((a, b) => a[0] - b[0]);
-  }, [data]);
+  }, [cloudPts]);
+
+  if (!data || data.length === 0) {
+    return (
+      <Box sx={{ height: "100%", display: "grid", placeItems: "center", opacity: 0.7 }}>
+        <Typography variant="caption">Save to compute cluster space</Typography>
+      </Box>
+    );
+  }
 
   const palette = [
     "rgba(59,130,246,0.85)",
@@ -687,15 +774,28 @@ function ClusterScatterPanel({ data }) {
         <YAxis type="number" dataKey="y" tick={{ fontSize: 12 }} />
         <Tooltip cursor={{ strokeOpacity: 0.2 }} />
         <Legend />
+
         {grouped.map(([k, pts]) => (
           <Scatter key={k} name={CLUSTER_META[k]?.name ?? `C${k}`} data={pts} fill={palette[k % palette.length]} />
         ))}
+
+        {userPts.length ? (
+          <Scatter name="You" data={userPts} fill="rgba(2,6,23,0.95)" />
+        ) : null}
       </ScatterChart>
     </ResponsiveContainer>
   );
 }
 
 function NetworthPanel({ data }) {
+  if (!data || data.length === 0) {
+    return (
+      <Box sx={{ height: "100%", display: "grid", placeItems: "center", opacity: 0.7 }}>
+        <Typography variant="caption">Save to compute net worth chart</Typography>
+      </Box>
+    );
+  }
+
   return (
     <ResponsiveContainer width="100%" height="100%">
       <LineChart data={data} margin={{ top: 12, right: 12, left: 0, bottom: 6 }}>
@@ -890,9 +990,11 @@ function MonthRow({ index, row, onChange, onDelete, canDelete, onAutofill }) {
 // -----------------------------
 // Results panel
 // -----------------------------
-function ResultsPanel({ clusterResult }) {
-  const top = clusterResult.top;
-  const probs = clusterResult.probs;
+function ResultsPanel({ clusterResult, conclusion, warnings, apiError }) {
+  const top = clusterResult?.top ?? 0;
+  const probs = Array.isArray(clusterResult?.probs) ? clusterResult.probs : [];
+
+  const topProb = probs.length ? Math.max(...probs) : 0;
 
   return (
     <Card
@@ -919,11 +1021,34 @@ function ResultsPanel({ clusterResult }) {
               <Typography variant="caption" sx={{ opacity: 0.75 }}>
                 After Save, FinGrowth shows the predicted financial clusters with their probabilistic breakdown.
               </Typography>
+
+              {/* API error */}
+              {apiError ? (
+                <Typography sx={{ mt: 1.0, color: "rgba(244,63,94,0.95)", fontWeight: 800 }}>
+                  {apiError}
+                </Typography>
+              ) : null}
+
+              {/* Server warnings */}
+              {Array.isArray(warnings) && warnings.length ? (
+                <Box sx={{ mt: 1.0 }}>
+                  {warnings.map((w, i) => (
+                    <Typography key={i} variant="caption" sx={{ display: "block", opacity: 0.75 }}>
+                      • {w}
+                    </Typography>
+                  ))}
+                </Box>
+              ) : null}
+
+              {/* Server-side conclusion text */}
+              {conclusion?.text ? (
+                <Typography sx={{ mt: 1.1, opacity: 0.92 }}>{conclusion.text}</Typography>
+              ) : null}
             </Box>
 
             <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
               <Chip
-                label={`${CLUSTER_META[top].name} · ${CLUSTER_META[top].range}`}
+                label={`${CLUSTER_META[top]?.name ?? "Unknown"} · ${CLUSTER_META[top]?.range ?? ""}`}
                 sx={{
                   borderRadius: 999,
                   fontWeight: 900,
@@ -932,7 +1057,7 @@ function ResultsPanel({ clusterResult }) {
                 }}
               />
               <Chip
-                label={`Top prob: ${(Math.max(...probs) * 100).toFixed(1)}%`}
+                label={`Top prob: ${(topProb * 100).toFixed(1)}%`}
                 sx={{
                   borderRadius: 999,
                   fontWeight: 900,
@@ -945,47 +1070,55 @@ function ResultsPanel({ clusterResult }) {
 
           <Divider sx={{ opacity: 0.25 }} />
 
-          <Grid container spacing={{ xs: 1.2, md: 1.6 }}>
-            {probs.map((p, i) => (
-              <Grid item xs={12} sm={6} md={4} lg={2} key={i}>
-                <Box
-                  sx={{
-                    borderRadius: 18,
-                    border: "1px solid rgba(15, 23, 42, 0.10)",
-                    background: "rgba(255,255,255,0.70)",
-                    p: 1.8,
-                    position: "relative",
-                    overflow: "hidden",
-                    minHeight: 110,
-                    minWidth: 165,
-                  }}
-                >
+          {probs.length ? (
+            <Grid container spacing={{ xs: 1.2, md: 1.6 }}>
+              {probs.map((p, i) => (
+                <Grid item xs={12} sm={6} md={4} lg={2} key={i}>
                   <Box
                     sx={{
-                      position: "absolute",
-                      inset: 0,
-                      background:
-                        i === top
-                          ? "linear-gradient(135deg, rgba(34,197,94,0.16), rgba(34,197,94,0.02))"
-                          : "linear-gradient(135deg, rgba(59,130,246,0.12), rgba(59,130,246,0.01))",
-                      pointerEvents: "none",
+                      borderRadius: 18,
+                      border: "1px solid rgba(15, 23, 42, 0.10)",
+                      background: "rgba(255,255,255,0.70)",
+                      p: 1.8,
+                      position: "relative",
+                      overflow: "hidden",
+                      minHeight: 110,
+                      minWidth: 165,
                     }}
-                  />
-                  <Stack spacing={0.6} sx={{ position: "relative" }} alignItems="center">
-                    <Typography variant="caption" sx={{ opacity: 0.75, fontWeight: 800 }}>
-                      {CLUSTER_META[i].name}
-                    </Typography>
-                    <Typography sx={{ fontWeight: 1000, fontSize: 24, lineHeight: 1.05 }}>
-                      {(p * 100).toFixed(2)}%
-                    </Typography>
-                    <Typography variant="caption" sx={{ opacity: 0.65 }}>
-                      {CLUSTER_META[i].range}
-                    </Typography>
-                  </Stack>
-                </Box>
-              </Grid>
-            ))}
-          </Grid>
+                  >
+                    <Box
+                      sx={{
+                        position: "absolute",
+                        inset: 0,
+                        background:
+                          i === top
+                            ? "linear-gradient(135deg, rgba(34,197,94,0.16), rgba(34,197,94,0.02))"
+                            : "linear-gradient(135deg, rgba(59,130,246,0.12), rgba(59,130,246,0.01))",
+                        pointerEvents: "none",
+                      }}
+                    />
+                    <Stack spacing={0.6} sx={{ position: "relative" }} alignItems="center">
+                      <Typography variant="caption" sx={{ opacity: 0.75, fontWeight: 800 }}>
+                        {CLUSTER_META[i]?.name ?? `C${i + 1}`}
+                      </Typography>
+                      <Typography sx={{ fontWeight: 1000, fontSize: 24, lineHeight: 1.05 }}>
+                        {(Number(p) * 100).toFixed(2)}%
+                      </Typography>
+                      <Typography variant="caption" sx={{ opacity: 0.65 }}>
+                        {CLUSTER_META[i]?.range ?? ""}
+                      </Typography>
+                    </Stack>
+                  </Box>
+                </Grid>
+              ))}
+            </Grid>
+          ) : (
+            <Box sx={{ py: 2.2, opacity: 0.75 }}>
+              <Typography variant="caption">
+                Save to compute probabilities and generate a model-backed conclusion.
+              </Typography>
+            </Box>
+          )}
         </Stack>
       </Box>
     </Card>

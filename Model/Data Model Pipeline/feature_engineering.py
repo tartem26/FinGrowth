@@ -1,31 +1,34 @@
 from __future__ import annotations
-
 from dataclasses import dataclass
-from typing import Any
-
+from typing import Any, Dict
 import numpy as np
 import pandas as pd
 
-
+# -------------------------
+# Columns: 17 categories
+# -------------------------
 CATEGORIES_17 = [
     "Income_Deposits",
     "Housing",
     "Utilities_Telecom",
     "Groceries_FoodAtHome",
     "Dining_FoodAway",
-    "Transportation_Gas",
-    "Transportation_PublicTransit",
-    "Insurance_Health",
-    "Insurance_Auto",
-    "Medical_OutOfPocket",
+    "Transportation_Variable",
+    "Auto_Costs",
+    "Healthcare_OOP",
+    "Insurance_All",
     "Debt_Payments",
     "Savings_Investments",
     "Education_Childcare",
     "Entertainment",
     "Subscriptions_Memberships",
+    "Cash_ATM_MiscTransfers",
     "Pets",
     "Travel",
 ]
+
+INCOME_COL = "Income_Deposits"
+OUTFLOW_COLS = [c for c in CATEGORIES_17 if c != INCOME_COL]
 
 
 @dataclass(frozen=True)
@@ -38,10 +41,10 @@ def _to_float(x: Any) -> float:
         return 0.0
     if isinstance(x, (int, float)):
         return float(x)
+    s = str(x).strip()
+    if s == "":
+        return 0.0
     try:
-        s = str(x).strip()
-        if s == "":
-            return 0.0
         return float(s)
     except Exception:
         return 0.0
@@ -53,23 +56,19 @@ def _safe_div(a: float, b: float) -> float:
     return a / b
 
 
-def _std_pop(arr: np.ndarray) -> float:
-    # population std (ddof=0) so it stays stable even for small n
-    if arr.size <= 1:
-        return 0.0
-    return float(np.std(arr, ddof=0))
-
-
 def _mean(arr: np.ndarray) -> float:
-    if arr.size == 0:
-        return 0.0
-    return float(np.mean(arr))
+    return float(np.mean(arr)) if arr.size else 0.0
 
 
 def _median(arr: np.ndarray) -> float:
-    if arr.size == 0:
+    return float(np.median(arr)) if arr.size else 0.0
+
+
+def _std_pop(arr: np.ndarray) -> float:
+    # population std (ddof=0)
+    if arr.size <= 1:
         return 0.0
-    return float(np.median(arr))
+    return float(np.std(arr, ddof=0))
 
 
 def _share_series(numer: np.ndarray, denom: np.ndarray) -> np.ndarray:
@@ -79,61 +78,80 @@ def _share_series(numer: np.ndarray, denom: np.ndarray) -> np.ndarray:
     return out
 
 
+def _normalize_legacy_columns(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    OPTIONAL:
+    If the frontend accidentally sends older keys, map them into the new merged schema.
+    This prevents all zeros features when keys mismatch.
+    """
+    # Transportation_Variable = Gas + PublicTransit (if not provided)
+    if "Transportation_Variable" not in df.columns:
+        gas = df["Transportation_Gas"] if "Transportation_Gas" in df.columns else 0.0
+        pub = df["Transportation_PublicTransit"] if "Transportation_PublicTransit" in df.columns else 0.0
+        df["Transportation_Variable"] = gas + pub
+
+    # Insurance_All = Health + Auto (if not provided)
+    if "Insurance_All" not in df.columns:
+        ih = df["Insurance_Health"] if "Insurance_Health" in df.columns else 0.0
+        ia = df["Insurance_Auto"] if "Insurance_Auto" in df.columns else 0.0
+        df["Insurance_All"] = ih + ia
+
+    # Healthcare_OOP from Medical_OutOfPocket (if not provided)
+    if "Healthcare_OOP" not in df.columns and "Medical_OutOfPocket" in df.columns:
+        df["Healthcare_OOP"] = df["Medical_OutOfPocket"]
+
+    # Auto_Costs fallback: if Auto_Costs missing but Insurance_Auto exists
+    if "Auto_Costs" not in df.columns and "Insurance_Auto" in df.columns:
+        df["Auto_Costs"] = df["Insurance_Auto"]
+
+    # Cash_ATM_MiscTransfers fallback if older name exists
+    if "Cash_ATM_MiscTransfers" not in df.columns and "Cash_ATM_Misc" in df.columns:
+        df["Cash_ATM_MiscTransfers"] = df["Cash_ATM_Misc"]
+
+    return df
+
+
 def build_features_from_months(months: list[dict], spec: FeatureSpec) -> pd.DataFrame:
     """
-    Converts UI monthly inputs into the exact engineered feature vector expected by feature_cols.json.
-
-    IMPORTANT:
-    - Uses shares relative to Income_Deposits (per-month).
-    - Aggregates over months with mean / median / std as requested by feature_cols.
-    - Some features (Cash_ATM_MiscTransfers) are not present in UI -> set to 0 share.
+    Main logic:
+      - monthly shares: category / Income_Deposits
+      - NetCashflowRate = (Income - sum(outflows)) / Income
+      - EssentialRate = (Housing + Utilities + Groceries) / Income
+      - DiscretionaryRate = (Dining + Entertainment + Travel + Subscriptions) / Income
+      - aggregate across months using mean/median/std (ddof=0), then select feature_cols
     """
-
     if not isinstance(months, list) or len(months) == 0:
         months = [{}]
 
-    # Build numeric dataframe with all UI categories present
     df = pd.DataFrame(months)
+    df = _normalize_legacy_columns(df)
+
+    # ensure all expected cols exist and numeric
     for k in CATEGORIES_17:
         if k not in df.columns:
             df[k] = 0.0
         df[k] = df[k].map(_to_float)
 
-    income = df["Income_Deposits"].to_numpy(dtype=float)
+    income = df[INCOME_COL].to_numpy(dtype=float)
 
-    # ----------------------------------------
-    # Group definitions to match feature names
-    # ----------------------------------------
+    # per-category arrays
     housing = df["Housing"].to_numpy(dtype=float)
     utilities = df["Utilities_Telecom"].to_numpy(dtype=float)
     groceries = df["Groceries_FoodAtHome"].to_numpy(dtype=float)
     dining = df["Dining_FoodAway"].to_numpy(dtype=float)
-
-    # Transportation_Variable: gas + public transit (variable transport)
-    trans_var = (df["Transportation_Gas"] + df["Transportation_PublicTransit"]).to_numpy(dtype=float)
-
-    # Auto_Costs: use auto insurance (fixed-ish auto cost)
-    # NOTE: If training defined Auto_Costs differently, update this mapping.
-    auto_costs = df["Insurance_Auto"].to_numpy(dtype=float)
-
-    healthcare_oop = df["Medical_OutOfPocket"].to_numpy(dtype=float)
-
-    # Insurance_All: health and auto
-    insurance_all = (df["Insurance_Health"] + df["Insurance_Auto"]).to_numpy(dtype=float)
-
+    trans_var = df["Transportation_Variable"].to_numpy(dtype=float)
+    auto_costs = df["Auto_Costs"].to_numpy(dtype=float)
+    healthcare_oop = df["Healthcare_OOP"].to_numpy(dtype=float)
+    insurance_all = df["Insurance_All"].to_numpy(dtype=float)
     debt = df["Debt_Payments"].to_numpy(dtype=float)
     edu = df["Education_Childcare"].to_numpy(dtype=float)
     entertainment = df["Entertainment"].to_numpy(dtype=float)
     subs = df["Subscriptions_Memberships"].to_numpy(dtype=float)
+    cash_atm_misc = df["Cash_ATM_MiscTransfers"].to_numpy(dtype=float)
     pets = df["Pets"].to_numpy(dtype=float)
     travel = df["Travel"].to_numpy(dtype=float)
 
-    # UI doesn't have this category -> keep zeros but still produce expected feature columns
-    cash_atm_misc = np.zeros_like(income, dtype=float)
-
-    # ----------------------------------------
-    # Shares relative to income
-    # ----------------------------------------
+    # shares
     housing_sh = _share_series(housing, income)
     utilities_sh = _share_series(utilities, income)
     groceries_sh = _share_series(groceries, income)
@@ -150,22 +168,19 @@ def build_features_from_months(months: list[dict], spec: FeatureSpec) -> pd.Data
     pets_sh = _share_series(pets, income)
     travel_sh = _share_series(travel, income)
 
-    # ----------------------------------------
-    # Rate features (relative to income)
-    # ----------------------------------------
-    essentials_amt = housing + utilities + groceries + trans_var + insurance_all + healthcare_oop + edu + pets
-    discretionary_amt = dining + entertainment + subs + travel
+    # ---- rates ----
+    essential_amt = housing + utilities + groceries
+    discretionary_amt = dining + entertainment + travel + subs
 
-    essential_rate = _share_series(essentials_amt, income)
+    essential_rate = _share_series(essential_amt, income)
     debt_rate = debt_sh
     discretionary_rate = _share_series(discretionary_amt, income)
 
-    # NetCashflowRate = (Income - Outflows) / Income
+    # NetCashflowRate = (Income - sum(outflows)) / Income
     outflows_amt = np.zeros_like(income, dtype=float)
-    for k in CATEGORIES_17:
-        if k == "Income_Deposits":
-            continue
-        outflows_amt += df[k].to_numpy(dtype=float)
+    for c in OUTFLOW_COLS:
+        outflows_amt += df[c].to_numpy(dtype=float)
+
     net_cashflow_rate = np.zeros_like(income, dtype=float)
     for i in range(len(income)):
         inc = float(income[i])
@@ -174,12 +189,9 @@ def build_features_from_months(months: list[dict], spec: FeatureSpec) -> pd.Data
         else:
             net_cashflow_rate[i] = (inc - float(outflows_amt[i])) / inc
 
-    # ----------------------------------------
-    # Aggregate into the exact feature vector
-    # ----------------------------------------
-    feats: dict[str, float] = {}
+    # aggregate into exact expected feature vector
+    feats: Dict[str, float] = {}
 
-    # Helpers for writing features
     def put_mean(prefix: str, arr: np.ndarray):
         feats[f"{prefix}__mean"] = _mean(arr)
 
@@ -234,24 +246,22 @@ def build_features_from_months(months: list[dict], spec: FeatureSpec) -> pd.Data
 
     put_median("Travel__share", travel_sh)
 
-    # Rates
+    # Rates (match feature_cols.json)
     put_std("EssentialRate", essential_rate)
-
     put_mean("DebtRate", debt_rate)
     put_median("DebtRate", debt_rate)
-
     put_mean("DiscretionaryRate", discretionary_rate)
     put_std("DiscretionaryRate", discretionary_rate)
-
     put_mean("NetCashflowRate", net_cashflow_rate)
     put_std("NetCashflowRate", net_cashflow_rate)
 
-    # Build df in exact column order expected by the model
     X = pd.DataFrame([feats])
 
-    # Ensure all expected columns exist (fill missing with 0)
-    for col in spec.feature_cols:
-        if col not in X.columns:
-            X[col] = 0.0
+    missing = [c for c in spec.feature_cols if c not in X.columns]
+    if missing:
+        raise ValueError(
+            f"Feature engineering mismatch: {len(missing)} expected features are missing. "
+            f"Example: {missing[:10]}"
+        )
 
     return X[spec.feature_cols]
