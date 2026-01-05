@@ -454,27 +454,27 @@ export default function FinGrowthDashboard() {
       }
 
       // --- Normalize backend output into the exact shape as UI expects ---
-      // Backend: radars = { radar1, radar2, radar3, radar4 }
-      // UI expects: { snapshot, trend, risk, growth }
+      // Backend returns: radars = { snapshot, trend, risk, growth }
+      // UI expects: analysis.radars.snapshot/trend/risk/growth
       const normalizedRadars = {
-        snapshot: out.radars?.radar1 ?? [],
-        trend: out.radars?.radar2 ?? [],
-        risk: out.radars?.radar3 ?? [],
-        growth: out.radars?.radar4 ?? [],
+        snapshot: out.radars?.snapshot ?? [],
+        trend: out.radars?.trend ?? [],
+        risk: out.radars?.risk ?? [],
+        growth: out.radars?.growth ?? [],
       };
 
-      // Backend: cluster_space = { points: [...], user_point: {...} }
-      // UI expects: a single points array, and it detects user point via `isUser: true`
-      const cloudPts = Array.isArray(out.cluster_space?.points)
-        ? out.cluster_space.points.map((p) => ({ ...p, isUser: false }))
-        : [];
+      // Backend returns: cluster_space = { points: [...], user_point: {...} }
+      // IMPORTANT: Backend may already include the user point inside points[] with isUser=true.
+      const pts = Array.isArray(out.cluster_space?.points) ? out.cluster_space.points : [];
+      const hasUserInPts = pts.some((p) => p && p.isUser);
 
-      const userPt = out.cluster_space?.user_point
-        ? [{ ...out.cluster_space.user_point, isUser: true }]
-        : [];
+      const userPt =
+        !hasUserInPts && out.cluster_space?.user_point
+          ? [{ ...out.cluster_space.user_point, isUser: true }]
+          : [];
 
       const normalizedClusterSpace = {
-        points: [...cloudPts, ...userPt],
+        points: [...pts, ...userPt],
       };
 
       const normalized = {
@@ -492,7 +492,6 @@ export default function FinGrowthDashboard() {
     } catch (e) {
       console.error(e);
       setApiError(e.message || String(e));
-      // No random fallback: keep previous charts/data
     } finally {
       setApiBusy(false);
     }
