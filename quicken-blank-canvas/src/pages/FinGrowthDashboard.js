@@ -75,12 +75,14 @@ const CATEGORIES_17 = [
 
 const CLUSTER_META = [
   { name: "C1_low", range: "<$2.3k" },
-  { name: "C2_lower_mid", range: "$2.3k–$4.2k" },
-  { name: "C3_mid", range: "$4.2k–$6.2k" },
-  { name: "C4_upper_mid", range: "$6.2k–$12.9k" },
-  { name: "C5_high", range: "$12.9k–$17.5k" },
+  { name: "C2_lower_mid", range: "$2.3k-$4.2k" },
+  { name: "C3_mid", range: "$4.2k-$6.2k" },
+  { name: "C4_upper_mid", range: "$6.2k-$12.9k" },
+  { name: "C5_high", range: "$12.9k-$17.5k" },
   { name: "C6_top5", range: ">=$17.5k" },
 ];
+
+const PREDICT_API_URL = "http://127.0.0.1:5055/predict";
 
 // -----------------------------
 // Mock chart data (UI-only)
@@ -382,6 +384,7 @@ export default function FinGrowthDashboard() {
     top: 3,
     probs: [0.06, 0.10, 0.12, 0.52, 0.14, 0.06],
   }));
+  const [apiBusy, setApiBusy] = useState(false);
 
   const radar1 = useMemo(() => makeRadarData(1), [savedAt]);
   const radar2 = useMemo(() => makeRadarData(2), [savedAt]);
@@ -423,18 +426,62 @@ export default function FinGrowthDashboard() {
     });
   }
 
-  function onSave() {
-    // UI-only: mimic inference/heuristic update
-    const jitter = () => Math.random() * 0.08 - 0.04;
-    const base = [0.05, 0.07, 0.10, 0.55, 0.16, 0.07].map((p) =>
-      Math.max(0.01, Math.min(0.90, p + jitter()))
-    );
-    const sum = base.reduce((a, b) => a + b, 0);
-    const probs = base.map((p) => p / sum);
-    const top = probs.indexOf(Math.max(...probs));
+  // function onSave() {
+  //   // UI-only: mimic inference/heuristic update
+  //   const jitter = () => Math.random() * 0.08 - 0.04;
+  //   const base = [0.05, 0.07, 0.10, 0.55, 0.16, 0.07].map((p) =>
+  //     Math.max(0.01, Math.min(0.90, p + jitter()))
+  //   );
+  //   const sum = base.reduce((a, b) => a + b, 0);
+  //   const probs = base.map((p) => p / sum);
+  //   const top = probs.indexOf(Math.max(...probs));
 
-    setClusterResult({ top, probs });
-    setSavedAt(new Date());
+  //   setClusterResult({ top, probs });
+  //   setSavedAt(new Date());
+  // }
+
+  async function onSave() {
+    setApiBusy(true);
+
+    try {
+      const res = await fetch(PREDICT_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ months: rows }),
+      });
+
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(`API error ${res.status}: ${txt}`);
+      }
+
+      const out = await res.json();
+
+      // expect: { top: number, probs: number[] }
+      if (!out || typeof out.top !== "number" || !Array.isArray(out.probs)) {
+        throw new Error("Bad API response shape");
+      }
+
+      setClusterResult({ top: out.top, probs: out.probs });
+      setSavedAt(new Date());
+      return;
+    } catch (e) {
+      console.error(e);
+
+      // UI-only: mimic inference/heuristic update
+      const jitter = () => Math.random() * 0.08 - 0.04;
+      const base = [0.05, 0.07, 0.10, 0.55, 0.16, 0.07].map((p) =>
+        Math.max(0.01, Math.min(0.90, p + jitter()))
+      );
+      const sum = base.reduce((a, b) => a + b, 0);
+      const probs = base.map((p) => p / sum);
+      const top = probs.indexOf(Math.max(...probs));
+
+      setClusterResult({ top, probs });
+      setSavedAt(new Date());
+    } finally {
+      setApiBusy(false);
+    }
   }
 
   const topMeta = CLUSTER_META[clusterResult.top];
@@ -562,6 +609,7 @@ export default function FinGrowthDashboard() {
               <Button
                 variant="contained"
                 onClick={onSave}
+                disabled={apiBusy}
                 startIcon={<CheckCircleRoundedIcon />}
                 sx={{
                   borderRadius: 999,
