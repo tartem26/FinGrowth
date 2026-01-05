@@ -74,12 +74,12 @@ const CATEGORIES_17 = [
 ];
 
 const CLUSTER_META = [
-  { name: "C1_low", range: "<$2.3k" },
-  { name: "C2_lower_mid", range: "$2.3k-$4.2k" },
-  { name: "C3_mid", range: "$4.2k-$6.2k" },
-  { name: "C4_upper_mid", range: "$6.2k-$12.9k" },
-  { name: "C5_high", range: "$12.9k-$17.5k" },
-  { name: "C6_top5", range: ">=$17.5k" },
+  { name: "C1 - Low", range: "<$2.3k" },
+  { name: "C2 - Lower Mid", range: "$2.3k - $4.2k" },
+  { name: "C3 - Mid", range: "$4.2k - $6.2k" },
+  { name: "C4 - Upper Mid", range: "$6.2k - $12.9k" },
+  { name: "C5 - High", range: "$12.9k - $17.5k" },
+  { name: "C6 - Top 5%", range: ">=$17.5k" },
 ];
 
 const PREDICT_API_URL = "http://127.0.0.1:5055/predict";
@@ -775,9 +775,18 @@ function ClusterScatterPanel({ data }) {
         <Tooltip cursor={{ strokeOpacity: 0.2 }} />
         <Legend />
 
-        {grouped.map(([k, pts]) => (
-          <Scatter key={k} name={CLUSTER_META[k]?.name ?? `C${k}`} data={pts} fill={palette[k % palette.length]} />
-        ))}
+        {grouped
+          .filter(([k]) => k >= 0)
+          .map(([k, pts]) => (
+            <Scatter
+              key={k}
+              name={CLUSTER_META[k]?.name ?? `C${k + 1}`} // optional: 1-based label
+              data={pts}
+              fill={palette[k % palette.length]}
+            />
+          ))
+        }
+
 
         {userPts.length ? (
           <Scatter name="You" data={userPts} fill="rgba(2,6,23,0.95)" />
