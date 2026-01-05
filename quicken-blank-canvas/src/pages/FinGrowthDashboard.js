@@ -79,7 +79,7 @@ const CLUSTER_META = [
   { name: "C3 - Mid", range: "$4.2k - $6.2k" },
   { name: "C4 - Upper Mid", range: "$6.2k - $12.9k" },
   { name: "C5 - High", range: "$12.9k - $17.5k" },
-  { name: "C6 - Top 5%", range: ">=$17.5k" },
+  { name: "C6 - Top 5%", range: "≥$17.5k" },
 ];
 
 const PREDICT_API_URL = "http://127.0.0.1:5055/predict";
