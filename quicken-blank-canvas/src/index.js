@@ -4,6 +4,11 @@ import ReactDOM from "react-dom";
 import AppRoutes from "./AppRoutes";
 import styles from './styles.js';
 
+// Globals:
+// lastCursor: global {x,y} updated on mouse move over the canvas.
+// sizeEnum: maps small | medium | ... to [width,height].
+// turtle: global mutable object holding drawing state (x,y,angle,penDown,color,lineWidth).
+// moveArray: list of movement method names used to generate buttons.
 let lastCursor = { x: null, y: null };
 
 const sizeEnum = {
@@ -24,6 +29,16 @@ const turtle = {
 const moveArray = ['shiftLeft', 'shiftRight', 'shiftUp', 'shiftDown'];
 
 export default function ReactRoot(){
+    // State/hooks:
+    // contentRef via useRef: points to a scroll container div to measure its layout.
+    // isOverflow: boolean used to decide if the scroll container should show a scrollbar and get extra bottom padding.
+    // size: selected canvas size string (used to compute width/height).
+    // x, y, angle: React state mirrors of turtle.x/y/angle so the turtle marker (triangle <div>) moves/rotates in the React UI.
+    // fractal controls:
+    //      Koch: kochOrigin (center or cursor), kochOrder
+    //      Hilbert: hilbertOrigin, hilbertLevel
+    //      hoverMenu: when hover menu is open ('koch' | 'hilbert' | null)
+
     const contentRef = useRef(null);
     const [isOverflow, setIsOverflow] = useState(false);
 
@@ -43,11 +58,17 @@ export default function ReactRoot(){
 
     const [hoverMenu, setHoverMenu] = useState(null); // null | 'koch' | 'hilbert'
 
+    // Routing:
+    //      useNavigate() from react-router-dom
+    //      handleNavigate() calls navigate('/fin-growth-dashboard')
     const navigate = useNavigate();
     const handleNavigate = () => {
         navigate('/fin-growth-dashboard');
     };
 
+    // Drawing triggers:
+    //      drawKoch() calls turtle.kochSnowflake(order, {origin, x:lastCursor.x, y:lastCursor.y})
+    //      drawHilbert() calls turtle.hilbert(level, {origin, x:lastCursor.x, y:lastCursor.y})
     const drawKoch = (order = kochOrder, origin = kochOrigin) => {
         // clearCanvas();
         turtle.kochSnowflake(Number(order), {
@@ -66,6 +87,9 @@ export default function ReactRoot(){
         });
     };
 
+    // useLayoutEffect runs synchronously after DOM updates, which is useful for
+    // layout measurement (scrollHeight/clientHeight) without web flickering.
+    // It re-checks overflow when size changes and needs window resize.
     useLayoutEffect(() => {
         const check = () => {
             const el = contentRef.current;
@@ -462,6 +486,26 @@ turtle.right = function (angle) {
 };
 
 // extra turtle utilities
+
+// Core turtle operations
+// Move and optionally draw:
+//      forward(length) computes a new (x,y) from current angle and draws a line if penDown.
+//      It uses:
+//          angleInRadians = angle * π / 180
+//          x += length * sin(angle)
+//          y += length * cos(angle)
+// Turn:
+//      left(angle) and right(angle) update heading.
+// Clamp move buttons:
+//      _clampToCanvas(nx, ny) keeps the turtle marker inside the canvas boundaries.
+//      shiftLeft/Right/Up/Down update x/y using clamping.
+// Utilities used by fractals
+//      pushState()/popState(): saves and restores turtle state (position, angle, pen, style).
+//      setColor, setLineWidth, moveTo, center, etc.
+//      _stopAnim(): cancels any running requestAnimationFrame animation by bumping a token and canceling the prior RAF id.
+
+
+
 turtle._stateStack = [];
 
 turtle.pushState = function () {
@@ -553,6 +597,10 @@ turtle.drawStar = function () {
     }
 };
 
+// Draws 3 Koch curves (triangle sides).
+// Each koch(lvl, len) expands into 4 smaller segments with turns in between:
+//      A, L60, B, R120, C, L60, D
+// Uses stack.push(...) in reverse order so popping executes in correct order.
 turtle.kochSnowflake = function (order = 4, opts = {}) {
     if (typeof canvas === "undefined" || !canvas) return;
     this._stopAnim();
@@ -673,6 +721,13 @@ turtle.kochSnowflake = function (order = 4, opts = {}) {
     this._anim.rafId = requestAnimationFrame(tick);
 };
 
+// Uses standard Hilbert L-system–like expansion pattern.
+// Computes:
+//      step = size / (2^n - 1)
+//      total segments = 4^n - 1
+// Expands jobs like:
+//      turn, recurse, forward, turn, recurse, forward, recurse, turn, forward, recurse, turn (etc.)
+// Also stack-based and animated.
 turtle.hilbert = function (level = 5, opts = {}) {
     if (typeof canvas === "undefined" || !canvas) return;
     this._stopAnim();
