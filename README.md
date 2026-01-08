@@ -86,7 +86,7 @@ With default settings `--people-per-cluster 20000 --months 48 --include-metadata
     * debt-heavy vs debt-light
     * travel-heavy, dining-heavy, cash-heavy patterns
     * car owners / pet owners
-    
+
     This improves coverage and makes the Machine Learning pipeline training set more robust.
 
 6. **Build a person template using a Dirichlet prior (category `share` model)**
@@ -116,3 +116,306 @@ With default settings `--people-per-cluster 20000 --months 48 --include-metadata
 9. **Write large CSV files with chunked streaming**
 
     The generator writes rows incrementally in `chunk_people` blocks, so it can scale to millions of rows without excessive RAM usage. The output is deterministic within each cluster due to `cluster_seed`.
+
+## Data Pipeline & Model Training
+
+This project trains a supervised model to predict a person's financial group (`C1_low`, `C2_lower_mid`, `C3_mid`, `C4_upper_mid`, `C5_high`, and `C6_top5`) from monthly personal-finance records. The raw data is month-level (48 months per person), but the model is trained on person-level engineered features such as shares/rates and aggregation across months to avoid month-to-month noise and reduce leakage. Below is the pipeline structure from the notebook (`data_model_pipeline.ipynb`), with what it does and why it is there.
+
+1. **Setup**
+
+    The notebook starts by importing the usual stack (NumPy/Pandas/Sklearn/XGBoost/Matplotlib) and setting a consistent random seed. This is mostly about reproducibility and making sure that comparisons between preprocessing methods are fair (same split, same randomization, and same evaluation metric).
+
+2. **Load the 6 cluster datasets with month-level to person-level**
+
+    Load the six synthetic CSV files (`C1_low`, `C2_lower_mid`, `C3_mid`, `C4_upper_mid`, `C5_high`, and `C6_top5`) and map them to labels `0`, `1`, `2`, `3`, `4`, and `5`. Each file represents one cluster so the task becomes a multi-class classification.
+
+    **Key point:** each person has 48 rows (one row per month). Splitting must happen at the person level, not the row level, otherwise months from the same person can leak into both train and test.
+
+3. **Helper functions (plots, splits, quick eval, and STATE)**
+
+    The notebook defines utility functions that make the pipeline modular:
+
+    * Person-level splits using `GroupShuffleSplit` (group = `person_id`). This prevents leakage and makes validation more realistic as the model must generalize to new people, not new months from the same person.
+    * Quick evaluation helpers that compute accuracy, macro-F1, and generate confusion matrices / summary tables.
+    * A lightweight STATE dict used to carry the current dataset/features through each pipeline step while comparing alternatives.
+
+4. **Data Cleaning**
+
+    This stage makes the month-level table safe to engineer features from:
+    * Replace non-finite values (`±inf`) with `NaN`, then drop rows that are unusable, especially missing or non-positive income. Most features are share of income, so income must be valid.
+    * Fill missing outflow amounts as 0 (practical assumption for synthetic data).
+    * Create totals that later become rate features or examples:
+        * `TotalOutflows = sum(outflows)`
+        * `NetCashflow = Income - TotalOutflows`
+
+        This makes it easy to compute net-flow style ratios later.
+
+5. **Feature Encoding**
+
+    Month-level engineered features
+
+    * For each month `t` and category `c`:
+        * Share of income:
+
+        $$
+        share_{c,t} = \frac{outflow_{c,t}}{income_{t}}
+        $$
+
+        * Rates:
+            * `TotalOutflowRate = TotalOutflows / Income`
+            * `SavingsRate = Savings_Investments / Income`
+            * `DebtRate = Debt_Payments / Income`
+            * `EssentialsRate = (Housing + Utilities + Groceries) / Income`
+            * `DiscretionaryRate = (Dining + Entertainment + Subscriptions + Travel) / Income`
+            * `NetCashflowRate = NetCashflow / Income`
+
+    * Person-level aggregation (48 months into 1 row per person)
+
+        Group by `person_id` and aggregate each engineered feature with: `mean`, `median`, and `std`. This gives a stable fingerprint of behavior over time, instead of letting one unusual month dominate.
+
+    * Why this design works well:
+        * Shares/rates reduce sensitivity to absolute income scale.
+        * Aggregation reduces noise.
+        * Mean/median/std capture both typical behavior and volatility.
+
+6. **Cluster checks**
+
+    Before running model comparisons, the notebook includes basic checks to avoid training on bad data:
+    * Do the labels look balanced (or at least expected)?
+    * Do engineered rates stay in plausible ranges?
+    * Do per-cluster distributions differ enough to be learnable?
+
+7. **Preprocessing steps**
+
+    Each step below is tested by training a simple baseline model and selecting the variant with the best macro-F1 as macro-F1 matters because it treats all clusters equally instead of being dominated by the easiest class.
+
+    7.1. **Normalization (best = `sqrt`)**
+
+    * normalization = `none`
+
+        **Text HERE!!!!!**
+        | | | |
+        |---|---|---|
+        | ![](/Data%20Visualizations/Normalization%20(none_1).png) | ![](/Data%20Visualizations/Normalization%20(none_2).png) | ![](/Data%20Visualizations/Normalization%20(none_3).png) |
+
+    * normalization = `log`
+
+        **Text HERE!!!!!**
+        | | | |
+        |---|---|---|
+        | ![](/Data%20Visualizations/Normalization%20(log_1).png) | ![](/Data%20Visualizations/Normalization%20(log_2).png) | ![](/Data%20Visualizations/Normalization%20(log_3).png) |
+
+    * normalization = `inverse`
+
+        **Text HERE!!!!!**
+        | | | |
+        |---|---|---|
+        | ![](/Data%20Visualizations/Normalization%20(inverse_1).png) | ![](/Data%20Visualizations/Normalization%20(inverse_2).png) | ![](/Data%20Visualizations/Normalization%20(inverse_3).png) |
+
+    * normalization = `square`
+
+        **Text HERE!!!!!**
+        | | | |
+        |---|---|---|
+        | ![](/Data%20Visualizations/Normalization%20(square_1).png) | ![](/Data%20Visualizations/Normalization%20(square_2).png) | ![](/Data%20Visualizations/Normalization%20(square_3).png) |
+
+    * normalization = `zscore`
+
+        **Text HERE!!!!!**
+        | | | |
+        |---|---|---|
+        | ![](/Data%20Visualizations/Normalization%20(zscore_1).png) | ![](/Data%20Visualizations/Normalization%20(zscore_2).png) | ![](/Data%20Visualizations/Normalization%20(zscore_3).png) |
+
+    * normalization = `sqrt`
+
+        **Text HERE!!!!!**
+        | | | |
+        |---|---|---|
+        | ![](/Data%20Visualizations/Normalization%20(sqrt_1).png) | ![](/Data%20Visualizations/Normalization%20(sqrt_2).png) | ![](/Data%20Visualizations/Normalization%20(sqrt_3).png) |
+
+    * normalization = `yeo_johnson`
+
+        **Text HERE!!!!!**
+        | | | |
+        |---|---|---|
+        | ![](/Data%20Visualizations/Normalization%20(yeo_johnson_1).png) | ![](/Data%20Visualizations/Normalization%20(yeo_johnson_2).png) | ![](/Data%20Visualizations/Normalization%20(yeo_johnson_3).png) |
+
+    * normalization = `quantile_normal`
+
+        **Text HERE!!!!!**
+        | | | |
+        |---|---|---|
+        | ![](/Data%20Visualizations/Normalization%20(quantile_normal_1).png) | ![](/Data%20Visualizations/Normalization%20(quantile_normal_2).png) | ![](/Data%20Visualizations/Normalization%20(quantile_normal_3).png) |
+
+    * normalization = `log_then_zscore`
+
+        **Text HERE!!!!!**
+        | | | |
+        |---|---|---|
+        | ![](/Data%20Visualizations/Normalization%20(log_then_zscore_1).png) | ![](/Data%20Visualizations/Normalization%20(log_then_zscore_2).png) | ![](/Data%20Visualizations/Normalization%20(log_then_zscore_3).png) |
+
+    * Summary
+
+        | Method          | Accuracy      | Macro F1      |
+        | --------------- | ------------- | ------------- |
+        | sqrt            | 0.999833      | 0.999833      |
+        | quantile_normal | 0.999708      | 0.999706      |
+        | log_then_zscore | 0.999667      | 0.999666      |
+        | none            | 0.999667      | 0.999665      |
+        | log             | 0.999667      | 0.999664      |
+        | yeo_johnson     | 0.999583      | 0.999580      |
+        | zscore          | 0.999542      | 0.999539      |
+        | square          | 0.999167      | 0.999159      |
+        | inverse         | 0.998958      | 0.998954      |
+
+        Normalization BEST = `sqrt` (acc = `0.9998` and macro_f1 = `0.9998`)
+
+        `sqrt` is a good choice here as:
+
+        * Engineered features are mostly non-negative and skewed.
+        * Sqrt reduces skew without being as aggressive as log.
+
+    7.2. **Regularization (best = L2)**
+
+    * Summary
+
+        | Penalty    | C   | L1_Ratio | Accuracy | Macro F1 |
+        | ---------- | --- | -------- | -------- | -------- |
+        | l2         | 1.0 | 0.5      | 0.999833 | 0.999833 |
+        | l1         | 1.0 | 0.5      | 0.999583 | 0.999577 |
+        | elasticnet | 1.0 | 0.5      | 0.999542 | 0.999536 |
+
+        Regularization BEST = `l2` (params = `{'C': 1.0}`, acc = `0.9998`, and macro_f1 = `0.9998`)
+
+    7.3. **Outlier Detection (best = `none`)**
+
+    * outlier_method = `none`
+
+        **Text HERE!!!!!**
+        | | | |
+        |---|---|---|
+        | ![](/Data%20Visualizations/Outlier%20Method%20(none_1).png) | ![](/Data%20Visualizations/Outlier%20Method%20(none_2).png) | ![](/Data%20Visualizations/Outlier%20Method%20(none_3).png) |
+
+    * outlier_method = `iqr`
+
+        **Text HERE!!!!!**
+        | | | |
+        |---|---|---|
+        | ![](/Data%20Visualizations/Outlier%20Method%20(iqr_1).png) | ![](/Data%20Visualizations/Outlier%20Method%20(iqr_2).png) | ![](/Data%20Visualizations/Outlier%20Method%20(iqr_3).png) |
+
+    * outlier_method = `mad`
+
+        **Text HERE!!!!!**
+        | | | |
+        |---|---|---|
+        | ![](/Data%20Visualizations/Outlier%20Method%20(mad_1).png) | ![](/Data%20Visualizations/Outlier%20Method%20(mad_2).png) | ![](/Data%20Visualizations/Outlier%20Method%20(mad_3).png) |
+
+    * Summary
+
+        | Outlier Method | Accuracy | Macro F1 |
+        | -------------- | -------- | -------- |
+        | none           | 0.999833 | 0.999833 |
+        | mad            | 0.999708 | 0.999707 |
+        | iqr            | 0.999625 | 0.999622 |
+
+        Outlier Method BEST = `none` (acc = `0.9998` and macro_f1 = `0.9998`)
+
+    7.4. **Feature Selection (best = `heatmap_drop`)**
+
+    * Heatmap correlation (Heatmap-drop eval: acc = `0.9922` and macro_f1 = `0.9923`)
+
+        **Text HERE!!!!!**
+        | | |
+        |---|---|
+        | ![](/Data%20Visualizations/Feature%20Selection%20(heatmap_correlation_1).png) | ![](/Data%20Visualizations/Feature%20Selection%20(heatmap_correlation_2).png) |
+
+    * VIF (VIF-drop eval: acc = `0.6399` and macro_f1 = `0.6377`)
+
+        **Text HERE!!!!!**
+        | Feature                                | VIF         |
+        | -------------------------------------- | ----------- |
+        | Debt_Payments__share__mean             | inf         |
+        | DebtRate__mean	                     | inf         |
+        | Auto_Costs__share__mean	             | 1488.229360 |
+        | Healthcare_OOP__share__mean            | 1410.626246 |
+        | Auto_Costs__share__median		         | 650.088079  |
+        | Insurance_All__share__mean 	         | 492.828699  |
+        | Healthcare_OOP__share__median 	     | 465.430529  |
+        | Transportation_Variable__share__median | 404.193452  |
+        | Auto_Costs__share__std	             | 290.139224  |
+        | Healthcare_OOP__share__std             | 225.351986  |
+        | Debt_Payments__share__std	             | 219.542359  |
+        | Insurance_All__share__std	             | 139.428371  |
+        | DiscretionaryRate__std	             | 139.046245  |
+        | Pets__share__std	                     | 137.943165  |
+        | Groceries_FoodAtHome__share__median	 | 110.582508  |
+
+
+    * Confusion-matrix entropy (Entropy-selected eval: acc = `0.6399` and macro_f1 = `0.6377`)
+
+        Entropy-wrapper baseline: score = `0.3774`, f1 = `0.6377`, and ent = `1.0413` (features = `13`)
+        Entropy-wrapper final feature count: `13`
+
+    * Summary
+
+        Feature Selection BEST feature set = `heatmap_drop` (acc = `0.9922`, macro_f1 = `0.9923`, and features = `37`)
+
+        ![](/Data%20Visualizations/Feature%20Selection%20(summary).png)
+
+    7.5 **Scaling (best = `robust`)**
+
+    * scaling = `none`
+    * scaling = `zscore`
+    * scaling = `robust`
+    * scaling = `minmax`
+    * Summary
+
+8. **Model training**
+
+    Models trained:
+    * Logistic Regression
+    * Random Forest
+    * ExtraTrees
+    * XGBoost (BEST model with `macro_f1 = 0.9620`)
+    * MLP
+
+    Why XGBoost:
+    * Excellent on tabular and mixed-signal feature sets
+    * Captures non-linear thresholds; therefoe, cases like "savings rate high with housing share low become possible
+    * Strong performance without needing deep feature scaling
+
+9. **Saving artifacts**
+
+    Once the best pipeline configuration is selected, the notebook writes everything needed for consistent inference:
+
+    * `best_cluster_model.pkl` - the trained classifier (XGBoost)
+    * `feature_cols.json` - exact feature column order expected by the model
+    * `pipeline_config.json` - selected preprocessing choices with key parameters
+    * `norm_obj.pkl` - normalization transform object
+    * `scaler_obj.pkl` - scaling object (robust)
+    * `standardization_obj.pkl` - none in the chosen run, but still saved for consistency
+    * `outlier_bounds.pkl` - bounds used for probe generation and clipping logic
+
+    These artifacts are saved for backend (`predict_api.py`) to guarantee that training transforms is inference transforms.
+
+10. **Cluster space clouds**
+
+    After training, a cloud of synthetic probe feature vectors was run through the same transforms to predict cluster labels and project to 2D for plotting (PCA in the original version).
+
+    This produces cached visualization files like:
+    * `cluster_space_cache.joblib`
+    * `cluster_space_cache.json`
+
+    Those files are used by the frontend to show cluster regions without recomputing projections every time.
+
+11. **Verification & Testing**
+
+    Finally, the notebook includes behavioral tests that go beyond standard train/test metrics:
+
+    * **One-month test:** feeds a single month and verifies that the model still produces a reasonable cluster distribution with warnings that single-month inputs are inherently less stable.
+
+    * **6-month behavior timeline:** simulates short sequences to confirm the prediction responds to sustained behavior rather than one anomaly.
+
+    * **48-month what-if transition (C1 → C4):** use a heuristic blending function that gradually morphs spending shares from one cluster's profile to another and confirms the model transitions across clusters over time instead of snapping randomly.
+
+    These tests are vital since the app is meant to behave like a personal dynamic financial trajectory estimation tool and not just a static classifier.
