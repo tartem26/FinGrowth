@@ -6,7 +6,7 @@ The `data_generation.py` file builds a synthetic personal-finance dataset for a 
 
 ### Initial data source:
 * Data report source: [United States Census Bureau](https://www2.census.gov/library/publications/2025/demo/p60-286.pdf)
-* Generated data set download link: [DataSets](LinkLater)
+* Generated data set download link: [DataSets](https://mailuc-my.sharepoint.com/:f:/g/personal/tikhonam_mail_uc_edu/IgBEzX8vOTpVRZjoJVSQTCKmAWKpCWVlypzDgvrUqe8SFDA?e=JKGOxa)
 
 ### Clusters
 1. Cluster 1 - Financially strained (bottom 20%): ≤ $34,510 (around < $2,300/mo)
