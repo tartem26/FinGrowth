@@ -194,8 +194,15 @@ This project trains a supervised model to predict a person's financial group (`C
     * Normalization = `none`
 
         **Text HERE!!!!!**
-        | ![](/Data%20Visualizations/Normalization%20(none_1).png) | ![](/Data%20Visualizations/Normalization%20(none_2).png) | ![](/Data%20Visualizations/Normalization%20(none_3).png) |
-        |:---:|:---:|:---:|
+        <!-- | ![](/Data%20Visualizations/Normalization%20(none_1).png) | ![](/Data%20Visualizations/Normalization%20(none_2).png) | ![](/Data%20Visualizations/Normalization%20(none_3).png) |
+        |:---:|:---:|:---:| -->
+
+        <p>
+            <img src="./Data%20Visualizations/Normalization%20(none_1).png" height="100%" width="33%" />
+            <img src="./Data%20Visualizations/Normalization%20(none_2).png" height="100%" width="30%" />
+            <img src="./Data%20Visualizations/Normalization%20(none_3).png" height="100%" width="30%" />
+        </p>
+
 
     * Normalization = `log`
 
