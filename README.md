@@ -194,9 +194,8 @@ This project trains a supervised model to predict a person's financial group (`C
     * Normalization = `none`
 
         **Text HERE!!!!!**
-        | | | |
-        |---|---|---|
         | ![](/Data%20Visualizations/Normalization%20(none_1).png) | ![](/Data%20Visualizations/Normalization%20(none_2).png) | ![](/Data%20Visualizations/Normalization%20(none_3).png) |
+        |:---:|:---:|:---:|
 
     * Normalization = `log`
 
