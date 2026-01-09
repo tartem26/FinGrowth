@@ -127,22 +127,22 @@ This project trains a supervised model to predict a person's financial group (`C
 
 2. **Load the 6 cluster datasets with month-level to person-level**
 
-    Load the six synthetic CSV files (`C1_low`, `C2_lower_mid`, `C3_mid`, `C4_upper_mid`, `C5_high`, and `C6_top5`) and map them to labels `0`, `1`, `2`, `3`, `4`, and `5`. Each file represents one cluster so the task becomes a multi-class classification.
+    Load the six synthetic CSV files (`C1_low`, `C2_lower_mid`, `C3_mid`, `C4_upper_mid`, `C5_high`, and `C6_top5`) and map them to labels `0`, `1`, `2`, `3`, `4`, and `5`. Each file corresponds to a single cluster, so the task becomes a multi-class classification problem.
 
-    **Key point:** each person has 48 rows (one row per month). Splitting must happen at the person level, not the row level, otherwise months from the same person can leak into both train and test.
+    **Key point:** each person has 48 rows (one row per month). Splitting must happen at the person level, not the row level, otherwise months from the same person can leak into both the train and test sets.
 
 3. **Helper functions (plots, splits, quick eval, and STATE)**
 
     The notebook defines utility functions that make the pipeline modular:
 
-    * Person-level splits using `GroupShuffleSplit` (group = `person_id`). This prevents leakage and makes validation more realistic as the model must generalize to new people, not new months from the same person.
+    * Person-level splits using `GroupShuffleSplit` (group = `person_id`). This prevents leakage and makes validation more realistic, since the model must generalize to new people rather than new months from the same person.
     * Quick evaluation helpers that compute accuracy, macro-F1, and generate confusion matrices / summary tables.
     * A lightweight STATE dict used to carry the current dataset/features through each pipeline step while comparing alternatives.
 
 4. **Data Cleaning**
 
     This stage makes the month-level table safe to engineer features from:
-    * Replace non-finite values ($±inf$) with $NaN$, then drop rows that are unusable, especially missing or non-positive income. Most features are share of income, so income must be valid.
+    * Replace non-finite values ($±inf$) with $NaN$, then drop rows that are unusable, especially missing or non-positive income. Most features are a share of income, so income must be valid.
     * Fill missing outflow amounts as $0$ (practical assumption for synthetic data).
     * Create totals that later become rate features or examples:
         * `TotalOutflows = sum(outflows)`
@@ -167,7 +167,7 @@ This project trains a supervised model to predict a person's financial group (`C
 
     * Person-level aggregation (48 months into 1 row per person)
 
-        Group by `person_id` and aggregate each engineered feature with: $mean$, $median$, and $std$. This gives a stable fingerprint of behavior over time, instead of letting one unusual month dominate.
+        Group by `person_id` and aggregate each engineered feature with: $mean$, $median$, and $std$. This provides a stable fingerprint of behavior over time, rather than letting one unusual month dominate.
 
     * Benefits of this design:
         * Shares/rates reduce sensitivity to absolute income scale.
@@ -183,7 +183,7 @@ This project trains a supervised model to predict a person's financial group (`C
 
 7. **Preprocessing steps**
 
-    Each step below is tested by training a simple baseline model and selecting the variant with the best macro-F1 as macro-F1 matters because it treats all clusters equally instead of being dominated by the easiest class.
+    Each step below is tested by training a simple baseline model and selecting the variant with the best macro-F1, as macro-F1 treats all clusters equally and avoids being dominated by the easiest class.
 
     7.1 **Normalization (best = `sqrt`)**
 
@@ -235,7 +235,7 @@ This project trains a supervised model to predict a person's financial group (`C
 
     * **`sqrt`**
 
-        $x' = \sqrt{max(x, 0)}$. A mild variance-stabilizing transform for nonnegative amounts; reduces skew while preserving ordering. Engineered features are mostly non-negative and skewed; thus `sqrt` reduces skew without being as aggressive as `log`.
+        $x' = \sqrt{max(x, 0)}$. A mild variance-stabilizing transform for nonnegative amounts; reduces skew while preserving ordering. Engineered features are mostly non-negative and skewed; thus, `sqrt` reduces skew without being as aggressive as `log`.
         <p>
             <img src="./Data%20Visualizations/Normalization%20(sqrt_1).png" height="100%" width="33%" />
             <img src="./Data%20Visualizations/Normalization%20(sqrt_2).png" height="100%" width="30%" />
@@ -253,7 +253,7 @@ This project trains a supervised model to predict a person's financial group (`C
 
     * **`quantile_normal`**
 
-        $x' = \Phi^{-1}(F(x))$, where $F$ is the empirical CDF and $\Phi^{-1}$ is the normal inverse CDF. Maps each feature to an approximately normal distribution; strong transform that can change relative distances.
+        $x' = \Phi^{-1}(F(x))$, where $F$ is the empirical CDF and $\Phi^{-1}$ is the normal inverse CDF. Maps each feature to an approximately normal distribution; a strong transform that can change relative distances.
         <p>
             <img src="./Data%20Visualizations/Normalization%20(quantile_normal_1).png" height="100%" width="33%" />
             <img src="./Data%20Visualizations/Normalization%20(quantile_normal_2).png" height="100%" width="30%" />
@@ -293,7 +293,7 @@ This project trains a supervised model to predict a person's financial group (`C
 
     * **L2 (Ridge)**
 
-        Minimizes $L + \lambda||W||_2^2$. Shrinks weights to reduce overfitting and improve stability under correlated features. It also helps keeping intermediate comparisons stable and reduces noise filtering in early stages.
+        Minimizes $L + \lambda||W||_2^2$. Shrinks weights to reduce overfitting and improve stability under correlated features. It also helps keep intermediate comparisons stable and reduces noise filtering in early stages.
 
     * **Elastic Net**
 
@@ -313,7 +313,7 @@ This project trains a supervised model to predict a person's financial group (`C
 
     * **`none`**
 
-        No outlier handling: $x' = x$. Keeps full variance, but extreme synthetic/rare months can distort scaling and model boundaries. Since the dataset is synthetic and already constraint-aware, some outliers are already meaningful indications (e.g., rare high debt months).
+        No outlier handling: $x' = x$. Keeps full variance, but extreme synthetic/rare months can distort scaling and model boundaries. Since the dataset is synthetic and already constraint-aware, some outliers are meaningful indicators (e.g., rare high-debt months).
         <p>
             <img src="./Data%20Visualizations/Outlier%20Method%20(none_1).png" height="100%" width="33%" />
             <img src="./Data%20Visualizations/Outlier%20Method%20(none_2).png" height="100%" width="30%" />
@@ -322,7 +322,7 @@ This project trains a supervised model to predict a person's financial group (`C
 
     * **`iqr`**
 
-        Flag points outside $[Q_1 - k \cdot IQR, Q_3 + k \cdot IQR]$ where $IQR = Q_3 - Q_1$. The method is efficient for skewed data and could be used for clipping extreme spending months.
+        Flag points outside $[Q_1 - k \cdot IQR, Q_3 + k \cdot IQR]$ where $IQR = Q_3 - Q_1$. The method is efficient for skewed data and can be used to clip extreme spending months.
         <p>
             <img src="./Data%20Visualizations/Outlier%20Method%20(iqr_1).png" height="100%" width="33%" />
             <img src="./Data%20Visualizations/Outlier%20Method%20(iqr_2).png" height="100%" width="30%" />
@@ -352,7 +352,7 @@ This project trains a supervised model to predict a person's financial group (`C
 
     * **Heatmap correlation**
 
-        Uses correlation $r_{ij}$ to drop redundant features (e.g., remove one of a highly correlated pair). Helps prevent double counting the same spending signal. Since aggregated share/rate features can be highly correlated, dropping them often improves generalization.
+        Uses correlation $r_{ij}$ to drop redundant features (e.g., remove one of a highly correlated pair). Helps prevent double-counting the same spending signal. Since aggregated share/rate features can be highly correlated, dropping them often improves generalization.
         <p>
             <img src="./Data%20Visualizations/Feature%20Selection%20(heatmap_correlation_1).png" height="100%" width="46%" />
             <img src="./Data%20Visualizations/Feature%20Selection%20(heatmap_correlation_2).png" height="100%" width="46%" />
@@ -386,7 +386,7 @@ This project trains a supervised model to predict a person's financial group (`C
 
     * **Confusion-matrix entropy**
 
-        Compute entropy $H = -\sum_kp_klogp_k$ from a model's confusion behavior (or per-feature ablations). Lower entropy typically means clearer class separation; used to keep features that reduce ambiguity across clusters.
+        Compute entropy $H = -\sum_kp_klogp_k$ from a model's confusion behavior (or per-feature ablations). Lower entropy typically means clearer class separation; it is used to keep features that reduce ambiguity across clusters.
 
         * Entropy-wrapper baseline: score = `0.3774`, f1 = `0.6377`, and ent = `1.0413` (features = `13`)
         * Entropy-wrapper final feature count: `13`
@@ -452,7 +452,7 @@ This project trains a supervised model to predict a person's financial group (`C
 
     * **`none`**
 
-        No row-wise normalization. Preserves absolute magnitude differences between people/months. Since the data has already been normalized and scaled, there is no extra need for additional standardization in this case. Moreover, since the best model is tree-based and trees do not need standardized inputs.
+        No row-wise normalization. Preserves absolute magnitude differences between people/months. Since the data has already been normalized and scaled, there is no need for additional standardization in this case. Moreover, since the best model is tree-based, trees do not need standardized inputs.
         <p>
             <img src="./Data%20Visualizations/Standardization%20(none_1).png" height="100%" width="33%" />
             <img src="./Data%20Visualizations/Standardization%20(none_2).png" height="100%" width="28.5%" />
@@ -491,7 +491,7 @@ This project trains a supervised model to predict a person's financial group (`C
 
     * **`none`**
 
-        Keeps the natural class distribution. Best when the training set is already balanced or need a realistic frequency behavior.
+        Keeps the natural class distribution. Best when the training set is already balanced or needs a realistic frequency behavior.
 
     * **`SMOTE`**
 
@@ -503,7 +503,7 @@ This project trains a supervised model to predict a person's financial group (`C
 
     * **`UnderSample`**
 
-        Randomly removes samples from majority classes. Fast and simple, but can discard useful variety and shrink decision coverage.
+        Randomly removes samples from the majority classes. Fast and simple, but can discard a useful variety and shrink decision coverage.
 
     * **Summary**
 
@@ -584,7 +584,7 @@ This project trains a supervised model to predict a person's financial group (`C
 
     * **XGBoost (BEST)**
 
-        Gradient-boosted trees: $F_t(x) = F_{t - 1}(x) + \eta f_t(x)$. Typically excels on tabular data by iteratively correcting errors and modeling complex feature interactions. This model performs excellent on tabular and mixed-signal feature sets. Thus, it will capture non-linear thresholds (e.g., savings rate high with housing share low) and perform well without needing deep feature scaling.
+        Gradient-boosted trees: $F_t(x) = F_{t - 1}(x) + \eta f_t(x)$. Typically excels on tabular data by iteratively correcting errors and modeling complex feature interactions. This model performs well on tabular and mixed-signal feature sets. Thus, it will capture non-linear thresholds (e.g., a high savings rate with a low housing share) and perform well without requiring deep feature scaling.
 
         **XGBoost results:** acc = `0.9960` and macro_f1 = `0.9961`
 
@@ -605,7 +605,7 @@ This project trains a supervised model to predict a person's financial group (`C
 
     * **MLP**
 
-        A feed-forward neural network trained by backpropagation. Can fit complex patterns but needs careful scaling/regularization and is more sensitive to dataset than tree boosting.
+        A feed-forward neural network trained by backpropagation. It can fit complex patterns but needs careful scaling/regularization and is more sensitive to the dataset than tree boosting.
 
         **MLP results:** acc = `0.9960` and macro_f1 = `0.9960`
 
@@ -654,7 +654,7 @@ This project trains a supervised model to predict a person's financial group (`C
     * `scaler_obj.pkl` - scaling transform (`robust`/`minmax`/`zscore`/`none`)
     * `sampler_obj.pkl` - the resampling strategy used during training (`SMOTE`, `SMOTEENN`, `UnderSample`, or identity for none)
 
-    These artifacts are saved for backend (`predict_api.py`).
+    These artifacts are saved for the backend (`predict_api.py`).
 
 10. **Cluster space clouds**
 
@@ -664,7 +664,7 @@ This project trains a supervised model to predict a person's financial group (`C
     * `cluster_space_cache.joblib`
     * `cluster_space_cache.json`
 
-    Those files are used by the frontend to show cluster regions without recomputing projections every time. The clusters space clouds in frontend do not look like clusters right after training as:
+    Those files are used by the frontend to show cluster regions without recomputing projections every time. The cluster space clouds in the frontend do not look like clusters right after training, as:
 
     * It is a 2D PCA projection of a high-dimensional space; thus, even if clusters are separable in $10$–$50$ dimensions, PCA(2) can squash that separation as PCA preserves variance, not class separation.
     * Cloud points are synthetic and a cache builder samples features broadly, often uniformly within bounds.
@@ -710,4 +710,7 @@ This project trains a supervised model to predict a person's financial group (`C
         ![](/Data%20Visualizations/Model%20(48_month_test).png)
         ![](/Data%20Visualizations/Model%20(48_month_test_radar).png)
 
-    These tests are vital since the app is meant to behave like a personal dynamic financial trajectory estimation tool and not just a static classifier.
+    These tests are vital, since the app is meant to behave like a personal dynamic financial trajectory estimation tool rather than just a static classifier.
+
+## Front end
+
