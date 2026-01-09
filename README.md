@@ -714,3 +714,157 @@ This project trains a supervised model to predict a person's financial group (`C
 
 ## Front end
 
+### `FinGrowthDashboard.js` (dashboard UI)
+
+**Purpose:** One-page dashboard that collects monthly totals for 17 categories, calls the backend, and renders results.
+    <p>
+        <img src="./Data%20Visualizations/UI%20(dashboard_1).png" height="100%" width="46%" />
+        <img src="./Data%20Visualizations/UI%20(dashboard_2).png" height="100%" width="46%" />
+    </p>
+
+**UI layout:**
+
+* 4 radar charts (`Snapshot` / `Trend` / `Risk` / `Growth`)
+
+    ![](/Data%20Visualizations/UI%20(radars).png)
+
+    * **`Snapshot`**
+
+        Shows latest month profile as normalized behavior scores (`Essentials`, `Debt`, `Savings`, `Fun`, and `Left`). It helps understand the current state without needing long history. It updates only after Save, so the chart always matches the same model-backed run.
+
+    * **`Trend`**
+
+        Aggregates the recent window of months (rolling average) to show user's typical behavior lately. This smooths out one-off months and highlights consistent patterns. It is useful when entering multiple months to see the recent trend.
+
+    * **`Risk`**
+
+        Represents a conservative stability score across all provided months (penalizes volatility). If the user's spending behavior is inconsistent, Risk drops even if Snapshot looks fine. This panel is designed to reflect safe/steady patterns over time.
+
+    * **`Growth`**
+
+        Measures momentum by comparing the most recent window vs the previous window ($50$ = no change). Values above $50$ indicate improving signals (e.g., higher Savings score), below $50$ indicates decline. In other words, it shows the progress tendency.
+
+* Net worth line chart with cluster-space scatter
+
+    ![](/Data%20Visualizations/UI%20(net_and_cluster).png)
+
+    * **`Net worth`**
+
+        Plots a net worth / savings trajectory over time starting from a baseline and projecting forward. It uses user's income and outflows to estimate month-to-month net changes, then extrapolates a short forecast.
+
+    * **`Cluster space`**
+
+        Visualizes all 6 clusters as a 2D cloud (PCA projection) and places "You" (user) as a highlighted point. This shows where user's features land relative to cluster regions, not just the final label.
+
+* **Monthly input table** (add/delete months with autofill)
+
+    This is the data entry surface: add $1+$ months of totals across $17$ categories. More months generally improves stability of features like `mean`/`std` and makes `Trend`/`Risk`/`Growth` more meaningful. Autofill can generate realistic sample months per cluster to demo the system without manual typing. Adding or deleting a month updates the month counter in the top bar, and clicking Save calls `onSave()`, refreshes the "Updated HH:MM:SS" status timestamp in the top bar, and re-computes all charts/panels from the latest API response.
+
+    ![](/Data%20Visualizations/UI%20(monthly_inputs).png)
+
+* **Conclusion panel** (probabilities, drivers, missing fields, warnings, and errors)
+
+    Summarizes the top predicted cluster plus the full probability distribution across all clusters. It also lists top drivers (largest spend shares relative to income) and missing fields that may reduce accuracy. This panel is designed to be the single place a user reads when they want the answer fast.
+
+    ![](/Data%20Visualizations/UI%20(conclusion_1).png)
+
+* **Warnings and errors**
+
+    Warnings are non-fatal issues detected during parsing or inference (e.g., missing income, non-finite values, missing optional caches). They do not stop prediction, but they tell a user why results may be less reliable or why some visuals (like cluster space) might be empty. Errors happen when the API request fails (server offline, CORS/network issues, or a bad response shape), and the UI shows a red error box while keeping the rest of the dashboard intact. Together, warnings and errors prevent silent failures and make the app safer to scale: the frontend avoids repeated requests, and the backend can communicate degraded mode.
+
+    ![](/Data%20Visualizations/UI%20(conclusion_2).png)
+
+**State flow:**
+`rows` → POST to `/predict` → store `clusterResult` with `analysis` → charts rerender from backend response only.
+
+**Autofill:** Generates realistic month examples by cluster using deterministic RNG (`mulberry32`) so the same selections look stable across refreshes.
+
+**Backend string cleanup:** `FIELD_LABEL_MAP` and `prettifyBackendLine()` converts backend keys like `Groceries_FoodAtHome` into human labels (`Groceries`) for drivers/warnings.
+
+**Important detail:** the frontend normalizes response shape (radars, cluster points, warnings) so the UI does not crash when optional fields are missing.
+
+### Predict API call (frontend)
+
+* `PREDICT_API_URL = http://127.0.0.1:5055/predict`
+* `onSave()` does:
+    * `onSave()` sets an `apiBusy` flag before sending the request, and the Save button is disabled while `apiBusy=true`. This blocks UI updates / double-submits while the model pipeline is running, avoid overlapping requests or race condition responses.
+    * If the server is down (or returns non-200), the call fails fast, `apiError` is populated, and the UI stays stable instead of retry-spamming the backend. This pattern scales well later (multi-user / multi-worker servers).
+    * `fetch(..., { method:"POST", body:{ months: rows } })`
+    * validates response has `{ top, probs }`
+    * stores `analysis` payload used by charts and conclusion
+
+## Back end
+
+### `predict_api.py` (FastAPI inference server)
+
+**Purpose:** Turns `{ months: [...] }` into:
+* `top` cluster and `probs`
+* `radars` (4 radar datasets)
+* `networth` forecast series
+* `cluster_space` cloud and user projection
+* `conclusion` text, drivers, and missing fields
+* `warnings` (data and artifact warnings)
+
+### How the server works
+
+* **Load artifacts** from `artifacts/` at startup (model, preprocessing objects, and config)
+
+* **`/predict`:**
+
+    * **Parse input months** → **DataFrame** and detect missing fields and warnings on bad income
+    * **Feature engineering** (single-row feature vector)
+    * **Inference transforms** (must match training order):
+        * norm → outlier_clip → scaler → standardization
+    * **Predict probabilities** (`predict_proba` → fallback to softmax/onehot)
+    * **Generate charts** (radars and net worth)
+    * **Cluster space:** project user point using cached PCA params and return sampled cloud
+    * **Build conclusion:** top drivers based on latest-month shares
+
+* **`/health`** (check endpoint)
+Returns which artifacts exist with a pipeline config and warnings (e.g., missing sampler/cache).
+
+## Feature engineering (`feature_engineering.py`)
+
+* **Purpose:** Convert raw monthly dollars into model-behavior features.
+* **Main idea:** Use shares/rates so users are comparable across incomes:
+    * category_share = `category / Income_Deposits`
+    * NetCashflowRate = `(Income - sum(outflows)) / Income`
+    * EssentialRate = `(Housing + Utilities + Groceries) / Income`
+    * DiscretionaryRate = `(Dining + Entertainment + Travel + Subscriptions) / Income`
+* **Across-month aggregation:** compute `mean`/`median`/`std` ($ddof = 0$) for selected shares/rates → output `feature_cols.json`.
+* **Robustness:** `_normalize_legacy_columns()` maps older keys into the merged 17-category schema so the model will not silently get zeros.
+
+## Routing (`AppRoutes.js`)
+
+* **Purpose:** Connects pages with React Router
+    * `/` → `ReactRoot` (canvas playground)
+    * `/fin-growth-dashboard` → `FinGrowthDashboard` (finance UI)
+
+## Canvas entry with styles
+
+### `index.js` (canvas playground)
+
+* **Purpose:** A separate interactive canvas demo that also includes a button to navigate to FinGrowth.
+* **Key parts:**
+    * Uses `useNavigate()`  to route to `/fin-growth-dashboard`
+    * Renders a `<canvas>` and a "turtle" marker whose position/angle are mirrored in React state
+    * Mouse movement updates `lastCursor` (used as origin for fractals)
+    * Implements turtle drawing with animated Koch snowflake and Hilbert curve using stack-based expansion (avoids recursion and supports smooth animation)
+
+### `styles.js`
+
+* **Purpose:** JS style file for the canvas UI:
+    * full-screen fixed layout (`root`)
+    * gradient header
+    * reusable button styles, canvas wrapper, and a turtle triangle marker
+
+## Running the backend locally (Windows)
+
+### `requirements_api.txt`
+
+Pinned versions for FastAPI, uvicorn, and ML stack.
+
+### `run_api.bat`
+
+Runs:
+```uvicorn predict_api:app --host 127.0.0.1 --port 5055 --reload```
