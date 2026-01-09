@@ -1,9 +1,29 @@
+/* Hide table structure (borders and backgrounds) */
+table, table th, table td {
+  border: none !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Remove any row striping */
+table tr:nth-child(even),
+table tr:nth-child(odd) {
+  background: transparent !important;
+}
+
+/* nicer spacing and centered headers */
+table th {
+  text-align: center !important;
+  font-weight: 600;
+}
+table th, table td {
+  padding: 4px !important;
+}
+
+/* Keep images equal-sized */
 table img {
   width: 100%;
-  height: 160px;
+  height: 150px;
   object-fit: contain;
   display: block;
-  border: none;
-  background: transparent;
-  box-shadow: none;
 }
