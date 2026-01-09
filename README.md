@@ -244,7 +244,7 @@ This project trains a supervised model to predict a person's financial group (`C
 
     * **`yeo_johnson`**
 
-        A power transform $x' = \Tau_\lambda(x)$ (works for $x \geq 0$ and $x < 0$). Learns $\lambda$ to make features more Gaussian-like without requiring positivity.
+        A power transform $x' = T_\lambda(x)$ (works for $x \geq 0$ and $x < 0$). Learns $\lambda$ to make features more Gaussian-like without requiring positivity.
         <p>
             <img src="./Data%20Visualizations/Normalization%20(yeo_johnson_1).png" height="100%" width="33%" />
             <img src="./Data%20Visualizations/Normalization%20(yeo_johnson_2).png" height="100%" width="30%" />
