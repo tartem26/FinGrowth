@@ -1,5 +1,69 @@
 # FinGrowth
 
+## FinGrowth - Personal Finance Trajectory Dashboard
+End-to-end Machine Learning pipeline and full-stack demo that predicts a user's financial behavior cluster (`C1_low`, `C2_lower_mid`, `C3_mid`, `C4_upper_mid`, `C5_high`, and `C6_top5`) from $1+$ months of spending inputs across $17$ budget categories. The project implements a complete data pipeline (cleaning, feature encoding, outlier handling, feature selection, normalization/scaling/standardization, and class-imbalance sampling), then benchmarks multiple models (Logistic Regression, Random Forest, ExtraTrees, XGBoost, MLP), and ships the best-performing model for inference. A React with Material UI dashboard collects monthly totals, calls a FastAPI `/predict` endpoint, and renders interpretable outputs (4 radar panels, net worth projection, cluster space plot, and a model-backed conclusion with drivers/warnings). The repo also saves artifacts (transform objects, feature columns, config, model) so the exact training pipeline can be reproduced at inference time.
+
+<p>
+    <img src="./Data%20Visualizations/UI%20(dashboard_1).png" height="100%" width="46%" />
+    <img src="./Data%20Visualizations/UI%20(dashboard_2).png" height="100%" width="46%" />
+</p>
+
+## How to run
+
+### Terminal 1 - Frontend (React)
+
+* In the **Terminal 1**:
+
+    ```
+    cd .\FinGrowth\quicken-blank-canvas
+    npm start
+    ```
+
+* **Open:** `http://localhost:3000`
+
+### Terminal 2 - Backend (FastAPI)
+
+* In the **Terminal 2**:
+
+    ```
+    python -m uvicorn predict_api:app --host 127.0.0.1 --port 5055
+    ```
+
+* If it does not work, create and activate the API environment:
+
+    ```
+    cd .\FinGrowth\Model\Data Model Pipeline
+
+    conda create -n fingrowth-api -c conda-forge ^
+    python=3.10 ^
+    numpy=1.26.* ^
+    pandas=2.2.* ^
+    scikit-learn=1.4.* ^
+    joblib ^
+    fastapi ^
+    uvicorn ^
+    pydantic ^
+    xgboost
+
+    conda activate fingrowth-api
+    cd ".\FinGrowth\Model\Data Model Pipeline"
+    python -m uvicorn predict_api:app --host 127.0.0.1 --port 5055
+    ```
+
+* If it does not work (common missing dependency for samplers):
+    ```
+    conda activate fingrowth-api
+    conda install -c conda-forge imbalanced-learn -y
+    python -m uvicorn predict_api:app --host 127.0.0.1 --port 5055
+    ```
+
+* For autoreload (dev mode):
+    ```
+    python -m uvicorn predict_api:app --host 127.0.0.1 --port 5055 --reload
+    ```
+
+* **Open:** `http://127.0.0.1:5055/health`
+
 ## Data Generation
 
 The `data_generation.py` file builds a synthetic personal-finance dataset for a 1-person household. It produces 6 income clusters (`C1_low`, `C2_lower_mid`, `C3_mid`, `C4_upper_mid`, `C5_high`, and `C6_top5`), with each person having 48 months of data and each month represented by a single row with 17 columns (Income with 16 outflow categories). The datasets are generated as 6 CSV files (one per income cluster), along with a `generation_metadata.json` file that captures the run settings and the exact column order. The generator is designed to be constraint-aware, with realistic bounds; diverse, so that nothing collapses to the average; and reproducible, with seeded runs and metadata.
@@ -51,7 +115,7 @@ With default settings `--people-per-cluster 20000 --months 48 --include-metadata
 5. Each CSV row represents one person in one month, and (optionally) includes identifiers: `cluster`, `person_id`, `month_index` (enabled via `--include-metadata`)
 
 ### Why these income clusters and percentage ranges exist
-1. Income cluster cutoffs are modeled after U.S. income distribution tables (quintiles and upper tail), then treated as individual income for a 1-person household for this project’s simplified assumption.
+1. Income cluster cutoffs are modeled after U.S. income distribution tables (quintiles and upper tail), then treated as individual income for a 1-person household for this project's simplified assumption.
     * Source: [Census.gov](https://www.census.gov/library/publications/2023/demo/p60-279.html)
 2. Spending-share ranges (the percentage of income clamps) are inspired by how spending categories vary across income groups in national consumer expenditure statistics. The generator intentionally keeps these ranges wide so the dataset covers many plausible behaviors, while the Dirichlet, traits, and constraints functions create the realistic shape.
     * Source: [Bureau of Labor Statistics - U.S. Department of Labor](https://www.bls.gov/news.release/archives/cesan_09252024.pdf)
