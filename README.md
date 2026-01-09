@@ -158,7 +158,7 @@ This project trains a supervised model to predict a person's financial group (`C
         * Share of income:
 
         $$
-        share_{c,t} = \frac{outflow_{c,t}}{income_{t}}
+        share_{c,t} = \frac{outflow_{c,t}}{income_t}
         $$
 
         * Rates:
@@ -335,7 +335,7 @@ This project trains a supervised model to predict a person's financial group (`C
 
     * **`mad`**
 
-        Compute $MAD = median(|x - median(x)|)$ and use a robust z-score $z = \frac{0.6745(x - median)}{MAD}$. Strongly resistant to heavy tails and works well when means/std are unreliable.
+        Compute $MAD = median(|x - median(x)|)$ and use a `z-score` $z = \frac{0.6745(x - median)}{MAD}$. Strongly resistant to heavy tails and works well when means/std are unreliable.
         <p>
             <img src="./Data%20Visualizations/Outlier%20Method%20(mad_1).png" height="100%" width="33%" />
             <img src="./Data%20Visualizations/Outlier%20Method%20(mad_2).png" height="100%" width="30%" />
