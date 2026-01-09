@@ -3,4 +3,7 @@ table img {
   height: 160px;
   object-fit: contain;
   display: block;
+  border: none;
+  background: transparent;
+  box-shadow: none;
 }

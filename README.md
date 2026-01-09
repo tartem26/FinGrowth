@@ -152,7 +152,7 @@ This project trains a supervised model to predict a person's financial group (`C
 
 5. **Feature Encoding**
 
-    Month-level engineered features
+    Month-level engineered features (baseline eval (LR): acc = `0.9997` and macro_f1= `0.9997`)
 
     * For each month `t` and category `c`:
         * Share of income:
@@ -189,65 +189,65 @@ This project trains a supervised model to predict a person's financial group (`C
 
     Each step below is tested by training a simple baseline model and selecting the variant with the best macro-F1 as macro-F1 matters because it treats all clusters equally instead of being dominated by the easiest class.
 
-    7.1. **Normalization (best = `sqrt`)**
+    7.1 **Normalization (best = `sqrt`)**
 
-    * normalization = `none`
+    * Normalization = `none`
 
         **Text HERE!!!!!**
         | | | |
         |---|---|---|
         | ![](/Data%20Visualizations/Normalization%20(none_1).png) | ![](/Data%20Visualizations/Normalization%20(none_2).png) | ![](/Data%20Visualizations/Normalization%20(none_3).png) |
 
-    * normalization = `log`
+    * Normalization = `log`
 
         **Text HERE!!!!!**
         | | | |
         |---|---|---|
         | ![](/Data%20Visualizations/Normalization%20(log_1).png) | ![](/Data%20Visualizations/Normalization%20(log_2).png) | ![](/Data%20Visualizations/Normalization%20(log_3).png) |
 
-    * normalization = `inverse`
+    * Normalization = `inverse`
 
         **Text HERE!!!!!**
         | | | |
         |---|---|---|
         | ![](/Data%20Visualizations/Normalization%20(inverse_1).png) | ![](/Data%20Visualizations/Normalization%20(inverse_2).png) | ![](/Data%20Visualizations/Normalization%20(inverse_3).png) |
 
-    * normalization = `square`
+    * Normalization = `square`
 
         **Text HERE!!!!!**
         | | | |
         |---|---|---|
         | ![](/Data%20Visualizations/Normalization%20(square_1).png) | ![](/Data%20Visualizations/Normalization%20(square_2).png) | ![](/Data%20Visualizations/Normalization%20(square_3).png) |
 
-    * normalization = `zscore`
+    * Normalization = `zscore`
 
         **Text HERE!!!!!**
         | | | |
         |---|---|---|
         | ![](/Data%20Visualizations/Normalization%20(zscore_1).png) | ![](/Data%20Visualizations/Normalization%20(zscore_2).png) | ![](/Data%20Visualizations/Normalization%20(zscore_3).png) |
 
-    * normalization = `sqrt`
+    * Normalization = `sqrt`
 
         **Text HERE!!!!!**
         | | | |
         |---|---|---|
         | ![](/Data%20Visualizations/Normalization%20(sqrt_1).png) | ![](/Data%20Visualizations/Normalization%20(sqrt_2).png) | ![](/Data%20Visualizations/Normalization%20(sqrt_3).png) |
 
-    * normalization = `yeo_johnson`
+    * Normalization = `yeo_johnson`
 
         **Text HERE!!!!!**
         | | | |
         |---|---|---|
         | ![](/Data%20Visualizations/Normalization%20(yeo_johnson_1).png) | ![](/Data%20Visualizations/Normalization%20(yeo_johnson_2).png) | ![](/Data%20Visualizations/Normalization%20(yeo_johnson_3).png) |
 
-    * normalization = `quantile_normal`
+    * Normalization = `quantile_normal`
 
         **Text HERE!!!!!**
         | | | |
         |---|---|---|
         | ![](/Data%20Visualizations/Normalization%20(quantile_normal_1).png) | ![](/Data%20Visualizations/Normalization%20(quantile_normal_2).png) | ![](/Data%20Visualizations/Normalization%20(quantile_normal_3).png) |
 
-    * normalization = `log_then_zscore`
+    * Normalization = `log_then_zscore`
 
         **Text HERE!!!!!**
         | | | |
@@ -268,14 +268,14 @@ This project trains a supervised model to predict a person's financial group (`C
         | square          | 0.999167      | 0.999159      |
         | inverse         | 0.998958      | 0.998954      |
 
-        Normalization BEST = `sqrt` (acc = `0.9998` and macro_f1 = `0.9998`)
+        Normalization: BEST = `sqrt` (acc = `0.9998` and macro_f1 = `0.9998`)
 
         `sqrt` is a good choice here as:
 
         * Engineered features are mostly non-negative and skewed.
         * Sqrt reduces skew without being as aggressive as log.
 
-    7.2. **Regularization (best = L2)**
+    7.2 **Regularization (best = L2)**
 
     * Summary
 
@@ -285,25 +285,25 @@ This project trains a supervised model to predict a person's financial group (`C
         | l1         | 1.0 | 0.5      | 0.999583 | 0.999577 |
         | elasticnet | 1.0 | 0.5      | 0.999542 | 0.999536 |
 
-        Regularization BEST = `l2` (params = `{'C': 1.0}`, acc = `0.9998`, and macro_f1 = `0.9998`)
+        Regularization: BEST = `l2` (params = `{'C': 1.0}`, acc = `0.9998`, and macro_f1 = `0.9998`)
 
-    7.3. **Outlier Detection (best = `none`)**
+    7.3 **Outlier Detection (best = `none`)**
 
-    * outlier_method = `none`
+    * Outlier method = `none`
 
         **Text HERE!!!!!**
         | | | |
         |---|---|---|
         | ![](/Data%20Visualizations/Outlier%20Method%20(none_1).png) | ![](/Data%20Visualizations/Outlier%20Method%20(none_2).png) | ![](/Data%20Visualizations/Outlier%20Method%20(none_3).png) |
 
-    * outlier_method = `iqr`
+    * Outlier method = `iqr`
 
         **Text HERE!!!!!**
         | | | |
         |---|---|---|
         | ![](/Data%20Visualizations/Outlier%20Method%20(iqr_1).png) | ![](/Data%20Visualizations/Outlier%20Method%20(iqr_2).png) | ![](/Data%20Visualizations/Outlier%20Method%20(iqr_3).png) |
 
-    * outlier_method = `mad`
+    * Outlier method = `mad`
 
         **Text HERE!!!!!**
         | | | |
@@ -318,9 +318,9 @@ This project trains a supervised model to predict a person's financial group (`C
         | mad            | 0.999708 | 0.999707 |
         | iqr            | 0.999625 | 0.999622 |
 
-        Outlier Method BEST = `none` (acc = `0.9998` and macro_f1 = `0.9998`)
+        Outlier Method: BEST = `none` (acc = `0.9998` and macro_f1 = `0.9998`)
 
-    7.4. **Feature Selection (best = `heatmap_drop`)**
+    7.4 **Feature Selection (best = `heatmap_drop`)**
 
     * Heatmap correlation (Heatmap-drop eval: acc = `0.9922` and macro_f1 = `0.9923`)
 
@@ -358,17 +358,96 @@ This project trains a supervised model to predict a person's financial group (`C
 
     * Summary
 
-        Feature Selection BEST feature set = `heatmap_drop` (acc = `0.9922`, macro_f1 = `0.9923`, and features = `37`)
+        Feature Selection: BEST feature set = `heatmap_drop` (acc = `0.9922`, macro_f1 = `0.9923`, and features = `37`)
 
         ![](/Data%20Visualizations/Feature%20Selection%20(summary).png)
 
     7.5 **Scaling (best = `robust`)**
 
-    * scaling = `none`
-    * scaling = `zscore`
-    * scaling = `robust`
-    * scaling = `minmax`
+    * Scaling = `none`
+
+        **Text HERE!!!!!**
+        | | | |
+        |---|---|---|
+        | ![](/Data%20Visualizations/Scaling%20(none_1).png) | ![](/Data%20Visualizations/Scaling%20(none_2).png) | ![](/Data%20Visualizations/Scaling%20(none_3).png) |
+
+    * Scaling = `zscore`
+
+        **Text HERE!!!!!**
+        | | | |
+        |---|---|---|
+        | ![](/Data%20Visualizations/Scaling%20(zscore_1).png) | ![](/Data%20Visualizations/Scaling%20(zscore_2).png) | ![](/Data%20Visualizations/Scaling%20(zscore_3).png) |
+
+    * Scaling = `robust`
+
+        **Text HERE!!!!!**
+        | | | |
+        |---|---|---|
+        | ![](/Data%20Visualizations/Scaling%20(robust_1).png) | ![](/Data%20Visualizations/Scaling%20(robust_2).png) | ![](/Data%20Visualizations/Scaling%20(robust_3).png) |
+
+    * Scaling = `minmax`
+
+        **Text HERE!!!!!**
+        | | | |
+        |---|---|---|
+        | ![](/Data%20Visualizations/Scaling%20(minmax_1).png) | ![](/Data%20Visualizations/Scaling%20(minmax_2).png) | ![](/Data%20Visualizations/Scaling%20(minmax_3).png) |
+
     * Summary
+
+        | Scaler | Accuracy | Macro F1 |
+        | ------ | -------- | -------- |
+        | robust | 0.992708 | 0.992746 |
+        | zscore | 0.992083 | 0.992120 |
+        | minmax | 0.975667 | 0.975786 |
+        | none   | 0.943042 | 0.943272 |
+
+        Scaling: BEST = `robust` (acc = `0.9927` and macro_f1 = `0.9927`)
+
+    7.6 **Standardization (best = `none`)**
+
+    * Standardization = `none`
+
+        **Text HERE!!!!!**
+        | | | |
+        |---|---|---|
+        | ![](/Data%20Visualizations/Standardization%20(none_1).png) | ![](/Data%20Visualizations/Standardization%20(none_2).png) | ![](/Data%20Visualizations/Standardization%20(none_3).png) |
+
+    * Standardization = `l2`
+
+        **Text HERE!!!!!**
+        | | | |
+        |---|---|---|
+        | ![](/Data%20Visualizations/Standardization%20(l2_1).png) | ![](/Data%20Visualizations/Standardization%20(l2_2).png) | ![](/Data%20Visualizations/Standardization%20(l2_3).png) |
+
+    * Standardization = `l1`
+
+        **Text HERE!!!!!**
+        | | | |
+        |---|---|---|
+        | ![](/Data%20Visualizations/Standardization%20(l1_1).png) | ![](/Data%20Visualizations/Standardization%20(l1_2).png) | ![](/Data%20Visualizations/Standardization%20(l1_3).png) |
+
+    * Summary
+
+        | Standardization | Accuracy | Macro F1 |
+        | --------------- | -------- | -------- |
+        | none            | 0.992708 | 0.992746 |
+        | l2              | 0.966458 | 0.966387 |
+        | l1              | 0.920958 | 0.921226 |
+
+        Standardization BEST = `none` (acc = `0.9927` and macro_f1 = `0.9927`)
+
+    7.7 **Sampling (best = `SMOTE`)**
+
+    * Summary
+
+        | Sampler     | Accuracy | Macro F1 |
+        | ----------- | -------- | -------- |
+        | SMOTE       | 0.993000 | 0.993039 |
+        | UnderSample | 0.992958 | 0.992996 |
+        | none        | 0.992708 | 0.992746 |
+        | SMOTEENN    | 0.979708 | 0.979812 |
+
+        Sampling: BEST = `SMOTE` (acc = `0.9930` and macro_f1 = `0.9930`)
 
 8. **Model training**
 
