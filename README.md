@@ -730,19 +730,19 @@ This project trains a supervised model to predict a person's financial group (`C
 
     * **`Snapshot`**
 
-        Shows latest month profile as normalized behavior scores (`Essentials`, `Debt`, `Savings`, `Fun`, and `Left`). It helps understand the current state without needing long history. It updates only after Save, so the chart always matches the same model-backed run.
+        Shows the latest month profile as normalized behavior scores (`Essentials`, `Debt`, `Savings`, `Fun`, and `Left`). It helps understand the current state without needing a long history. It updates only after Save, so the chart always matches the same model-backed run.
 
     * **`Trend`**
 
-        Aggregates the recent window of months (rolling average) to show user's typical behavior lately. This smooths out one-off months and highlights consistent patterns. It is useful when entering multiple months to see the recent trend.
+        Aggregates the recent months' data (rolling average) to show the user's typical behavior over the past few months. This smooths out one-off months and highlights consistent patterns. It is useful when entering multiple months to see the recent trend.
 
     * **`Risk`**
 
-        Represents a conservative stability score across all provided months (penalizes volatility). If the user's spending behavior is inconsistent, Risk drops even if Snapshot looks fine. This panel is designed to reflect safe/steady patterns over time.
+        Represents a conservative stability score across all provided months (penalizes volatility). If the user's spending behavior is inconsistent, `Risk` drops even if Snapshot looks fine. This panel is designed to reflect safe/steady patterns over time.
 
     * **`Growth`**
 
-        Measures momentum by comparing the most recent window vs the previous window ($50$ = no change). Values above $50$ indicate improving signals (e.g., higher Savings score), below $50$ indicates decline. In other words, it shows the progress tendency.
+        Measures momentum by comparing the most recent window vs the previous window ($50$ = no change). Values above $50$ indicate improving signals (e.g., a higher `Savings` score), while values below $50$ indicate a decline. In other words, it shows the trend of progress.
 
 * Net worth line chart with cluster-space scatter
 
@@ -750,15 +750,15 @@ This project trains a supervised model to predict a person's financial group (`C
 
     * **`Net worth`**
 
-        Plots a net worth / savings trajectory over time starting from a baseline and projecting forward. It uses user's income and outflows to estimate month-to-month net changes, then extrapolates a short forecast.
+        Plots a net worth / savings trajectory over time, starting from a baseline and projecting forward. It uses the user's income and outflows to estimate month-to-month net changes, then extrapolates a short forecast.
 
     * **`Cluster space`**
 
-        Visualizes all 6 clusters as a 2D cloud (PCA projection) and places "You" (user) as a highlighted point. This shows where user's features land relative to cluster regions, not just the final label.
+        Visualizes all 6 clusters as a 2D cloud (PCA projection) and places "You" (user) as a highlighted point. This shows where user's features land relative to the cluster regions, not just the final label.
 
 * **Monthly input table** (add/delete months with autofill)
 
-    This is the data entry surface: add $1+$ months of totals across $17$ categories. More months generally improves stability of features like `mean`/`std` and makes `Trend`/`Risk`/`Growth` more meaningful. Autofill can generate realistic sample months per cluster to demo the system without manual typing. Adding or deleting a month updates the month counter in the top bar, and clicking Save calls `onSave()`, refreshes the "Updated HH:MM:SS" status timestamp in the top bar, and re-computes all charts/panels from the latest API response.
+    This is the data entry surface: add $1+$ months of totals across $17$ categories. More months generally improve the stability of features like `mean`/`std`, making `Trend`/`Risk`/`Growth` more meaningful. Autofill can generate realistic sample months per cluster to demo the system without manual typing. Adding or deleting a month updates the month counter in the top bar, and clicking Save calls `onSave()`, refreshes the "Updated HH:MM:SS" status timestamp in the top bar, and re-computes all charts/panels from the latest API response.
 
     ![](/Data%20Visualizations/UI%20(monthly_inputs).png)
 
@@ -770,7 +770,7 @@ This project trains a supervised model to predict a person's financial group (`C
 
 * **Warnings and errors**
 
-    Warnings are non-fatal issues detected during parsing or inference (e.g., missing income, non-finite values, missing optional caches). They do not stop prediction, but they tell a user why results may be less reliable or why some visuals (like cluster space) might be empty. Errors happen when the API request fails (server offline, CORS/network issues, or a bad response shape), and the UI shows a red error box while keeping the rest of the dashboard intact. Together, warnings and errors prevent silent failures and make the app safer to scale: the frontend avoids repeated requests, and the backend can communicate degraded mode.
+    Warnings are non-fatal issues detected during parsing or inference (e.g., missing income, non-finite values, missing optional caches). They do not stop prediction, but they tell a user why results may be less reliable or why some visuals (like cluster space) might be empty. Errors occur when the API request fails (server is offline, CORS/network issues, or a malformed response), and the UI displays a red error box while keeping the rest of the dashboard intact. Together, warnings and errors prevent silent failures and make the app safer to scale: the frontend avoids repeated requests, and the backend can communicate degraded mode.
 
     ![](/Data%20Visualizations/UI%20(conclusion_2).png)
 
@@ -787,7 +787,7 @@ This project trains a supervised model to predict a person's financial group (`C
 
 * `PREDICT_API_URL = http://127.0.0.1:5055/predict`
 * `onSave()` does:
-    * `onSave()` sets an `apiBusy` flag before sending the request, and the Save button is disabled while `apiBusy=true`. This blocks UI updates / double-submits while the model pipeline is running, avoid overlapping requests or race condition responses.
+    * `onSave()` sets an `apiBusy` flag before sending the request, and the Save button is disabled while `apiBusy=true`. This blocks UI updates / double-submits while the model pipeline is running, avoiding overlapping requests or race condition responses.
     * If the server is down (or returns non-200), the call fails fast, `apiError` is populated, and the UI stays stable instead of retry-spamming the backend. This pattern scales well later (multi-user / multi-worker servers).
     * `fetch(..., { method:"POST", body:{ months: rows } })`
     * validates response has `{ top, probs }`
