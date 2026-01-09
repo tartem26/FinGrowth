@@ -207,58 +207,98 @@ This project trains a supervised model to predict a person's financial group (`C
     * Normalization = `log`
 
         **Text HERE!!!!!**
-        | | | |
+        <!-- | | | |
         |---|---|---|
-        | ![](/Data%20Visualizations/Normalization%20(log_1).png) | ![](/Data%20Visualizations/Normalization%20(log_2).png) | ![](/Data%20Visualizations/Normalization%20(log_3).png) |
+        | ![](/Data%20Visualizations/Normalization%20(log_1).png) | ![](/Data%20Visualizations/Normalization%20(log_2).png) | ![](/Data%20Visualizations/Normalization%20(log_3).png) | -->
+        <p>
+            <img src="./Data%20Visualizations/Normalization%20(log_1).png" height="100%" width="33%" />
+            <img src="./Data%20Visualizations/Normalization%20(log_2).png" height="100%" width="30%" />
+            <img src="./Data%20Visualizations/Normalization%20(log_3).png" height="100%" width="30%" />
+        </p>
 
     * Normalization = `inverse`
 
         **Text HERE!!!!!**
-        | | | |
+        <!-- | | | |
         |---|---|---|
-        | ![](/Data%20Visualizations/Normalization%20(inverse_1).png) | ![](/Data%20Visualizations/Normalization%20(inverse_2).png) | ![](/Data%20Visualizations/Normalization%20(inverse_3).png) |
+        | ![](/Data%20Visualizations/Normalization%20(inverse_1).png) | ![](/Data%20Visualizations/Normalization%20(inverse_2).png) | ![](/Data%20Visualizations/Normalization%20(inverse_3).png) | -->
+        <p>
+            <img src="./Data%20Visualizations/Normalization%20(inverse_1).png" height="100%" width="33%" />
+            <img src="./Data%20Visualizations/Normalization%20(inverse_2).png" height="100%" width="30%" />
+            <img src="./Data%20Visualizations/Normalization%20(inverse_3).png" height="100%" width="30%" />
+        </p>
 
     * Normalization = `square`
 
         **Text HERE!!!!!**
-        | | | |
+        <!-- | | | |
         |---|---|---|
-        | ![](/Data%20Visualizations/Normalization%20(square_1).png) | ![](/Data%20Visualizations/Normalization%20(square_2).png) | ![](/Data%20Visualizations/Normalization%20(square_3).png) |
+        | ![](/Data%20Visualizations/Normalization%20(square_1).png) | ![](/Data%20Visualizations/Normalization%20(square_2).png) | ![](/Data%20Visualizations/Normalization%20(square_3).png) | -->
+        <p>
+            <img src="./Data%20Visualizations/Normalization%20(square_1).png" height="100%" width="33%" />
+            <img src="./Data%20Visualizations/Normalization%20(square_2).png" height="100%" width="30%" />
+            <img src="./Data%20Visualizations/Normalization%20(square_3).png" height="100%" width="30%" />
+        </p>
 
     * Normalization = `zscore`
 
         **Text HERE!!!!!**
-        | | | |
+        <!-- | | | |
         |---|---|---|
-        | ![](/Data%20Visualizations/Normalization%20(zscore_1).png) | ![](/Data%20Visualizations/Normalization%20(zscore_2).png) | ![](/Data%20Visualizations/Normalization%20(zscore_3).png) |
+        | ![](/Data%20Visualizations/Normalization%20(zscore_1).png) | ![](/Data%20Visualizations/Normalization%20(zscore_2).png) | ![](/Data%20Visualizations/Normalization%20(zscore_3).png) | -->
+        <p>
+            <img src="./Data%20Visualizations/Normalization%20(zscore_1).png" height="100%" width="33%" />
+            <img src="./Data%20Visualizations/Normalization%20(zscore_2).png" height="100%" width="30%" />
+            <img src="./Data%20Visualizations/Normalization%20(zscore_3).png" height="100%" width="30%" />
+        </p>
 
     * Normalization = `sqrt`
 
         **Text HERE!!!!!**
-        | | | |
+        <!-- | | | |
         |---|---|---|
-        | ![](/Data%20Visualizations/Normalization%20(sqrt_1).png) | ![](/Data%20Visualizations/Normalization%20(sqrt_2).png) | ![](/Data%20Visualizations/Normalization%20(sqrt_3).png) |
+        | ![](/Data%20Visualizations/Normalization%20(sqrt_1).png) | ![](/Data%20Visualizations/Normalization%20(sqrt_2).png) | ![](/Data%20Visualizations/Normalization%20(sqrt_3).png) | -->
+        <p>
+            <img src="./Data%20Visualizations/Normalization%20(sqrt_1).png" height="100%" width="33%" />
+            <img src="./Data%20Visualizations/Normalization%20(sqrt_2).png" height="100%" width="30%" />
+            <img src="./Data%20Visualizations/Normalization%20(sqrt_3).png" height="100%" width="30%" />
+        </p>
 
     * Normalization = `yeo_johnson`
 
         **Text HERE!!!!!**
-        | | | |
+        <!-- | | | |
         |---|---|---|
-        | ![](/Data%20Visualizations/Normalization%20(yeo_johnson_1).png) | ![](/Data%20Visualizations/Normalization%20(yeo_johnson_2).png) | ![](/Data%20Visualizations/Normalization%20(yeo_johnson_3).png) |
+        | ![](/Data%20Visualizations/Normalization%20(yeo_johnson_1).png) | ![](/Data%20Visualizations/Normalization%20(yeo_johnson_2).png) | ![](/Data%20Visualizations/Normalization%20(yeo_johnson_3).png) | -->
+        <p>
+            <img src="./Data%20Visualizations/Normalization%20(yeo_johnson_1).png" height="100%" width="33%" />
+            <img src="./Data%20Visualizations/Normalization%20(yeo_johnson_2).png" height="100%" width="30%" />
+            <img src="./Data%20Visualizations/Normalization%20(yeo_johnson_3).png" height="100%" width="30%" />
+        </p>
 
     * Normalization = `quantile_normal`
 
         **Text HERE!!!!!**
-        | | | |
+        <!-- | | | |
         |---|---|---|
-        | ![](/Data%20Visualizations/Normalization%20(quantile_normal_1).png) | ![](/Data%20Visualizations/Normalization%20(quantile_normal_2).png) | ![](/Data%20Visualizations/Normalization%20(quantile_normal_3).png) |
+        | ![](/Data%20Visualizations/Normalization%20(quantile_normal_1).png) | ![](/Data%20Visualizations/Normalization%20(quantile_normal_2).png) | ![](/Data%20Visualizations/Normalization%20(quantile_normal_3).png) | -->
+        <p>
+            <img src="./Data%20Visualizations/Normalization%20(quantile_normal_1).png" height="100%" width="33%" />
+            <img src="./Data%20Visualizations/Normalization%20(quantile_normal_2).png" height="100%" width="30%" />
+            <img src="./Data%20Visualizations/Normalization%20(quantile_normal_3).png" height="100%" width="30%" />
+        </p>
 
     * Normalization = `log_then_zscore`
 
         **Text HERE!!!!!**
-        | | | |
+        <!-- | | | |
         |---|---|---|
-        | ![](/Data%20Visualizations/Normalization%20(log_then_zscore_1).png) | ![](/Data%20Visualizations/Normalization%20(log_then_zscore_2).png) | ![](/Data%20Visualizations/Normalization%20(log_then_zscore_3).png) |
+        | ![](/Data%20Visualizations/Normalization%20(log_then_zscore_1).png) | ![](/Data%20Visualizations/Normalization%20(log_then_zscore_2).png) | ![](/Data%20Visualizations/Normalization%20(log_then_zscore_3).png) | -->
+        <p>
+            <img src="./Data%20Visualizations/Normalization%20(log_then_zscore_1).png" height="100%" width="33%" />
+            <img src="./Data%20Visualizations/Normalization%20(log_then_zscore_2).png" height="100%" width="30%" />
+            <img src="./Data%20Visualizations/Normalization%20(log_then_zscore_3).png" height="100%" width="30%" />
+        </p>
 
     * Summary
 
@@ -298,23 +338,38 @@ This project trains a supervised model to predict a person's financial group (`C
     * Outlier method = `none`
 
         **Text HERE!!!!!**
-        | | | |
+        <!-- | | | |
         |---|---|---|
-        | ![](/Data%20Visualizations/Outlier%20Method%20(none_1).png) | ![](/Data%20Visualizations/Outlier%20Method%20(none_2).png) | ![](/Data%20Visualizations/Outlier%20Method%20(none_3).png) |
+        | ![](/Data%20Visualizations/Outlier%20Method%20(none_1).png) | ![](/Data%20Visualizations/Outlier%20Method%20(none_2).png) | ![](/Data%20Visualizations/Outlier%20Method%20(none_3).png) | -->
+        <p>
+            <img src="./Data%20Visualizations/Outlier%20Method%20(none_1).png" height="100%" width="33%" />
+            <img src="./Data%20Visualizations/Outlier%20Method%20(none_2).png" height="100%" width="30%" />
+            <img src="./Data%20Visualizations/Outlier%20Method%20(none_3).png" height="100%" width="30%" />
+        </p>
 
     * Outlier method = `iqr`
 
         **Text HERE!!!!!**
-        | | | |
+        <!-- | | | |
         |---|---|---|
-        | ![](/Data%20Visualizations/Outlier%20Method%20(iqr_1).png) | ![](/Data%20Visualizations/Outlier%20Method%20(iqr_2).png) | ![](/Data%20Visualizations/Outlier%20Method%20(iqr_3).png) |
+        | ![](/Data%20Visualizations/Outlier%20Method%20(iqr_1).png) | ![](/Data%20Visualizations/Outlier%20Method%20(iqr_2).png) | ![](/Data%20Visualizations/Outlier%20Method%20(iqr_3).png) | -->
+        <p>
+            <img src="./Data%20Visualizations/Outlier%20Method%20(iqr_1).png" height="100%" width="33%" />
+            <img src="./Data%20Visualizations/Outlier%20Method%20(iqr_2).png" height="100%" width="30%" />
+            <img src="./Data%20Visualizations/Outlier%20Method%20(iqr_3).png" height="100%" width="30%" />
+        </p>
 
     * Outlier method = `mad`
 
         **Text HERE!!!!!**
-        | | | |
+        <!-- | | | |
         |---|---|---|
-        | ![](/Data%20Visualizations/Outlier%20Method%20(mad_1).png) | ![](/Data%20Visualizations/Outlier%20Method%20(mad_2).png) | ![](/Data%20Visualizations/Outlier%20Method%20(mad_3).png) |
+        | ![](/Data%20Visualizations/Outlier%20Method%20(mad_1).png) | ![](/Data%20Visualizations/Outlier%20Method%20(mad_2).png) | ![](/Data%20Visualizations/Outlier%20Method%20(mad_3).png) | -->
+        <p>
+            <img src="./Data%20Visualizations/Outlier%20Method%20(mad_1).png" height="100%" width="33%" />
+            <img src="./Data%20Visualizations/Outlier%20Method%20(mad_2).png" height="100%" width="30%" />
+            <img src="./Data%20Visualizations/Outlier%20Method%20(mad_3).png" height="100%" width="30%" />
+        </p>
 
     * Summary
 
@@ -331,9 +386,13 @@ This project trains a supervised model to predict a person's financial group (`C
     * Heatmap correlation (Heatmap-drop eval: acc = `0.9922` and macro_f1 = `0.9923`)
 
         **Text HERE!!!!!**
-        | | |
+        <!-- | | |
         |---|---|
-        | ![](/Data%20Visualizations/Feature%20Selection%20(heatmap_correlation_1).png) | ![](/Data%20Visualizations/Feature%20Selection%20(heatmap_correlation_2).png) |
+        | ![](/Data%20Visualizations/Feature%20Selection%20(heatmap_correlation_1).png) | ![](/Data%20Visualizations/Feature%20Selection%20(heatmap_correlation_2).png) | -->
+        <p>
+            <img src="./Data%20Visualizations/Feature%20Selection%20(heatmap_correlation_1).png" height="100%" width="46%" />
+            <img src="./Data%20Visualizations/Feature%20Selection%20(heatmap_correlation_2).png" height="100%" width="46%" />
+        </p>
 
     * VIF (VIF-drop eval: acc = `0.6399` and macro_f1 = `0.6377`)
 
@@ -373,30 +432,50 @@ This project trains a supervised model to predict a person's financial group (`C
     * Scaling = `none`
 
         **Text HERE!!!!!**
-        | | | |
+        <!-- | | | |
         |---|---|---|
-        | ![](/Data%20Visualizations/Scaling%20(none_1).png) | ![](/Data%20Visualizations/Scaling%20(none_2).png) | ![](/Data%20Visualizations/Scaling%20(none_3).png) |
+        | ![](/Data%20Visualizations/Scaling%20(none_1).png) | ![](/Data%20Visualizations/Scaling%20(none_2).png) | ![](/Data%20Visualizations/Scaling%20(none_3).png) | -->
+        <p>
+            <img src="./Data%20Visualizations/Scaling%20(none_1).png" height="100%" width="33%" />
+            <img src="./Data%20Visualizations/Scaling%20(none_2).png" height="100%" width="28.5%" />
+            <img src="./Data%20Visualizations/Scaling%20(none_3).png" height="100%" width="28.5%" />
+        </p>
 
     * Scaling = `zscore`
 
         **Text HERE!!!!!**
-        | | | |
+        <!-- | | | |
         |---|---|---|
-        | ![](/Data%20Visualizations/Scaling%20(zscore_1).png) | ![](/Data%20Visualizations/Scaling%20(zscore_2).png) | ![](/Data%20Visualizations/Scaling%20(zscore_3).png) |
+        | ![](/Data%20Visualizations/Scaling%20(zscore_1).png) | ![](/Data%20Visualizations/Scaling%20(zscore_2).png) | ![](/Data%20Visualizations/Scaling%20(zscore_3).png) | -->
+        <p>
+            <img src="./Data%20Visualizations/Scaling%20(zscore_1).png" height="100%" width="33%" />
+            <img src="./Data%20Visualizations/Scaling%20(zscore_2).png" height="100%" width="28.5%" />
+            <img src="./Data%20Visualizations/Scaling%20(zscore_3).png" height="100%" width="28.5%" />
+        </p>
 
     * Scaling = `robust`
 
         **Text HERE!!!!!**
-        | | | |
+        <!-- | | | |
         |---|---|---|
-        | ![](/Data%20Visualizations/Scaling%20(robust_1).png) | ![](/Data%20Visualizations/Scaling%20(robust_2).png) | ![](/Data%20Visualizations/Scaling%20(robust_3).png) |
+        | ![](/Data%20Visualizations/Scaling%20(robust_1).png) | ![](/Data%20Visualizations/Scaling%20(robust_2).png) | ![](/Data%20Visualizations/Scaling%20(robust_3).png) | -->
+        <p>
+            <img src="./Data%20Visualizations/Scaling%20(robust_1).png" height="100%" width="33%" />
+            <img src="./Data%20Visualizations/Scaling%20(robust_2).png" height="100%" width="28.5%" />
+            <img src="./Data%20Visualizations/Scaling%20(robust_3).png" height="100%" width="28.5%" />
+        </p>
 
     * Scaling = `minmax`
 
         **Text HERE!!!!!**
-        | | | |
+        <!-- | | | |
         |---|---|---|
-        | ![](/Data%20Visualizations/Scaling%20(minmax_1).png) | ![](/Data%20Visualizations/Scaling%20(minmax_2).png) | ![](/Data%20Visualizations/Scaling%20(minmax_3).png) |
+        | ![](/Data%20Visualizations/Scaling%20(minmax_1).png) | ![](/Data%20Visualizations/Scaling%20(minmax_2).png) | ![](/Data%20Visualizations/Scaling%20(minmax_3).png) | -->
+        <p>
+            <img src="./Data%20Visualizations/Scaling%20(minmax_1).png" height="100%" width="33%" />
+            <img src="./Data%20Visualizations/Scaling%20(minmax_2).png" height="100%" width="28.5%" />
+            <img src="./Data%20Visualizations/Scaling%20(minmax_3).png" height="100%" width="28.5%" />
+        </p>
 
     * Summary
 
@@ -414,23 +493,38 @@ This project trains a supervised model to predict a person's financial group (`C
     * Standardization = `none`
 
         **Text HERE!!!!!**
-        | | | |
+        <!-- | | | |
         |---|---|---|
-        | ![](/Data%20Visualizations/Standardization%20(none_1).png) | ![](/Data%20Visualizations/Standardization%20(none_2).png) | ![](/Data%20Visualizations/Standardization%20(none_3).png) |
+        | ![](/Data%20Visualizations/Standardization%20(none_1).png) | ![](/Data%20Visualizations/Standardization%20(none_2).png) | ![](/Data%20Visualizations/Standardization%20(none_3).png) | -->
+        <p>
+            <img src="./Data%20Visualizations/Standardization%20(none_1).png" height="100%" width="33%" />
+            <img src="./Data%20Visualizations/Standardization%20(none_2).png" height="100%" width="28.5%" />
+            <img src="./Data%20Visualizations/Standardization%20(none_3).png" height="100%" width="28.5%" />
+        </p>
 
     * Standardization = `l2`
 
         **Text HERE!!!!!**
-        | | | |
+        <!-- | | | |
         |---|---|---|
-        | ![](/Data%20Visualizations/Standardization%20(l2_1).png) | ![](/Data%20Visualizations/Standardization%20(l2_2).png) | ![](/Data%20Visualizations/Standardization%20(l2_3).png) |
+        | ![](/Data%20Visualizations/Standardization%20(l2_1).png) | ![](/Data%20Visualizations/Standardization%20(l2_2).png) | ![](/Data%20Visualizations/Standardization%20(l2_3).png) | -->
+        <p>
+            <img src="./Data%20Visualizations/Standardization%20(l2_1).png" height="100%" width="33%" />
+            <img src="./Data%20Visualizations/Standardization%20(l2_2).png" height="100%" width="28.5%" />
+            <img src="./Data%20Visualizations/Standardization%20(l2_3).png" height="100%" width="28.5%" />
+        </p>
 
     * Standardization = `l1`
 
         **Text HERE!!!!!**
-        | | | |
+        <!-- | | | |
         |---|---|---|
-        | ![](/Data%20Visualizations/Standardization%20(l1_1).png) | ![](/Data%20Visualizations/Standardization%20(l1_2).png) | ![](/Data%20Visualizations/Standardization%20(l1_3).png) |
+        | ![](/Data%20Visualizations/Standardization%20(l1_1).png) | ![](/Data%20Visualizations/Standardization%20(l1_2).png) | ![](/Data%20Visualizations/Standardization%20(l1_3).png) | -->
+        <p>
+            <img src="./Data%20Visualizations/Standardization%20(l1_1).png" height="100%" width="33%" />
+            <img src="./Data%20Visualizations/Standardization%20(l1_2).png" height="100%" width="28.5%" />
+            <img src="./Data%20Visualizations/Standardization%20(l1_3).png" height="100%" width="28.5%" />
+        </p>
 
     * Summary
 
