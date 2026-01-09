@@ -142,8 +142,8 @@ This project trains a supervised model to predict a person's financial group (`C
 4. **Data Cleaning**
 
     This stage makes the month-level table safe to engineer features from:
-    * Replace non-finite values (`±inf`) with `NaN`, then drop rows that are unusable, especially missing or non-positive income. Most features are share of income, so income must be valid.
-    * Fill missing outflow amounts as 0 (practical assumption for synthetic data).
+    * Replace non-finite values ($±inf$) with $NaN$, then drop rows that are unusable, especially missing or non-positive income. Most features are share of income, so income must be valid.
+    * Fill missing outflow amounts as $0$ (practical assumption for synthetic data).
     * Create totals that later become rate features or examples:
         * `TotalOutflows = sum(outflows)`
         * `NetCashflow = Income - TotalOutflows`
@@ -154,7 +154,7 @@ This project trains a supervised model to predict a person's financial group (`C
 
     Month-level engineered features (baseline eval (LR): acc = `0.9997` and macro_f1= `0.9997`)
 
-    * For each month `t` and category `c`:
+    * For each month $t$ and category $c$:
         * Share of income:
 
         $$
@@ -171,17 +171,17 @@ This project trains a supervised model to predict a person's financial group (`C
 
     * Person-level aggregation (48 months into 1 row per person)
 
-        Group by `person_id` and aggregate each engineered feature with: `mean`, `median`, and `std`. This gives a stable fingerprint of behavior over time, instead of letting one unusual month dominate.
+        Group by `person_id` and aggregate each engineered feature with: $mean$, $median$, and $std$. This gives a stable fingerprint of behavior over time, instead of letting one unusual month dominate.
 
-    * Why this design works well:
+    * Benefits of this design:
         * Shares/rates reduce sensitivity to absolute income scale.
         * Aggregation reduces noise.
-        * Mean/median/std capture both typical behavior and volatility.
+        * $Mean/median/std$ capture both typical behavior and volatility.
 
 6. **Cluster checks**
 
     Before running model comparisons, the notebook includes basic checks to avoid training on bad data:
-    * Do the labels look balanced (or at least expected)?
+    * Do the labels look balanced or at least expected?
     * Do engineered rates stay in plausible ranges?
     * Do per-cluster distributions differ enough to be learnable?
 
@@ -191,12 +191,9 @@ This project trains a supervised model to predict a person's financial group (`C
 
     7.1 **Normalization (best = `sqrt`)**
 
-    * Normalization = `none`
+    * **`none`**
 
-        **Text HERE!!!!!**
-        <!-- | ![](/Data%20Visualizations/Normalization%20(none_1).png) | ![](/Data%20Visualizations/Normalization%20(none_2).png) | ![](/Data%20Visualizations/Normalization%20(none_3).png) |
-        |:---:|:---:|:---:| -->
-
+        No transform: $x' = x$. Keeps original units; good baseline, but skewed heavy-tail spending can dominate learning.
         <p>
             <img src="./Data%20Visualizations/Normalization%20(none_1).png" height="100%" width="33%" />
             <img src="./Data%20Visualizations/Normalization%20(none_2).png" height="100%" width="30%" />
@@ -204,103 +201,79 @@ This project trains a supervised model to predict a person's financial group (`C
         </p>
 
 
-    * Normalization = `log`
+    * **`log`**
 
-        **Text HERE!!!!!**
-        <!-- | | | |
-        |---|---|---|
-        | ![](/Data%20Visualizations/Normalization%20(log_1).png) | ![](/Data%20Visualizations/Normalization%20(log_2).png) | ![](/Data%20Visualizations/Normalization%20(log_3).png) | -->
+        $x' = log(1 + x)$. Compresses large values and reduces right-skew so high spenders do not overwhelm the model.
         <p>
             <img src="./Data%20Visualizations/Normalization%20(log_1).png" height="100%" width="33%" />
             <img src="./Data%20Visualizations/Normalization%20(log_2).png" height="100%" width="30%" />
             <img src="./Data%20Visualizations/Normalization%20(log_3).png" height="100%" width="30%" />
         </p>
 
-    * Normalization = `inverse`
+    * **`inverse`**
 
-        **Text HERE!!!!!**
-        <!-- | | | |
-        |---|---|---|
-        | ![](/Data%20Visualizations/Normalization%20(inverse_1).png) | ![](/Data%20Visualizations/Normalization%20(inverse_2).png) | ![](/Data%20Visualizations/Normalization%20(inverse_3).png) | -->
+        $x' = \frac{1}{x + \epsilon}$. Down-weights large magnitudes and highlights small-but-nonzero values; very sensitive near zero, so $\epsilon$ is required.
         <p>
             <img src="./Data%20Visualizations/Normalization%20(inverse_1).png" height="100%" width="33%" />
             <img src="./Data%20Visualizations/Normalization%20(inverse_2).png" height="100%" width="30%" />
             <img src="./Data%20Visualizations/Normalization%20(inverse_3).png" height="100%" width="30%" />
         </p>
 
-    * Normalization = `square`
+    * **`square`**
 
-        **Text HERE!!!!!**
-        <!-- | | | |
-        |---|---|---|
-        | ![](/Data%20Visualizations/Normalization%20(square_1).png) | ![](/Data%20Visualizations/Normalization%20(square_2).png) | ![](/Data%20Visualizations/Normalization%20(square_3).png) | -->
+        $x' = x^2$. Expands large values and increases separation for high spend behavior; can worsen skew and outliers.
         <p>
             <img src="./Data%20Visualizations/Normalization%20(square_1).png" height="100%" width="33%" />
             <img src="./Data%20Visualizations/Normalization%20(square_2).png" height="100%" width="30%" />
             <img src="./Data%20Visualizations/Normalization%20(square_3).png" height="100%" width="30%" />
         </p>
 
-    * Normalization = `zscore`
+    * **`zscore`**
 
-        **Text HERE!!!!!**
-        <!-- | | | |
-        |---|---|---|
-        | ![](/Data%20Visualizations/Normalization%20(zscore_1).png) | ![](/Data%20Visualizations/Normalization%20(zscore_2).png) | ![](/Data%20Visualizations/Normalization%20(zscore_3).png) | -->
+        $x' = \frac{x - \mu}{\sigma}$. Centers and scales each feature to comparable units; assumes mean/std are meaningful and can be outlier-sensitive.
         <p>
             <img src="./Data%20Visualizations/Normalization%20(zscore_1).png" height="100%" width="33%" />
             <img src="./Data%20Visualizations/Normalization%20(zscore_2).png" height="100%" width="30%" />
             <img src="./Data%20Visualizations/Normalization%20(zscore_3).png" height="100%" width="30%" />
         </p>
 
-    * Normalization = `sqrt`
+    * **`sqrt`**
 
-        **Text HERE!!!!!**
-        <!-- | | | |
-        |---|---|---|
-        | ![](/Data%20Visualizations/Normalization%20(sqrt_1).png) | ![](/Data%20Visualizations/Normalization%20(sqrt_2).png) | ![](/Data%20Visualizations/Normalization%20(sqrt_3).png) | -->
+        $x' = \sqrt{max(x, 0)}$. A mild variance-stabilizing transform for nonnegative amounts; reduces skew while preserving ordering. Engineered features are mostly non-negative and skewed; thus `sqrt` reduces skew without being as aggressive as `log`.
         <p>
             <img src="./Data%20Visualizations/Normalization%20(sqrt_1).png" height="100%" width="33%" />
             <img src="./Data%20Visualizations/Normalization%20(sqrt_2).png" height="100%" width="30%" />
             <img src="./Data%20Visualizations/Normalization%20(sqrt_3).png" height="100%" width="30%" />
         </p>
 
-    * Normalization = `yeo_johnson`
+    * **`yeo_johnson`**
 
-        **Text HERE!!!!!**
-        <!-- | | | |
-        |---|---|---|
-        | ![](/Data%20Visualizations/Normalization%20(yeo_johnson_1).png) | ![](/Data%20Visualizations/Normalization%20(yeo_johnson_2).png) | ![](/Data%20Visualizations/Normalization%20(yeo_johnson_3).png) | -->
+        A power transform $x' = \Tau_\lambda(x)$ (works for $x \geq 0$ and $x < 0$). Learns $\lambda$ to make features more Gaussian-like without requiring positivity.
         <p>
             <img src="./Data%20Visualizations/Normalization%20(yeo_johnson_1).png" height="100%" width="33%" />
             <img src="./Data%20Visualizations/Normalization%20(yeo_johnson_2).png" height="100%" width="30%" />
             <img src="./Data%20Visualizations/Normalization%20(yeo_johnson_3).png" height="100%" width="30%" />
         </p>
 
-    * Normalization = `quantile_normal`
+    * **`quantile_normal`**
 
-        **Text HERE!!!!!**
-        <!-- | | | |
-        |---|---|---|
-        | ![](/Data%20Visualizations/Normalization%20(quantile_normal_1).png) | ![](/Data%20Visualizations/Normalization%20(quantile_normal_2).png) | ![](/Data%20Visualizations/Normalization%20(quantile_normal_3).png) | -->
+        $x' = \Phi^{-1}(F(x))$, where $F$ is the empirical CDF and $\Phi^{-1}$ is the normal inverse CDF. Maps each feature to an approximately normal distribution; strong transform that can change relative distances.
         <p>
             <img src="./Data%20Visualizations/Normalization%20(quantile_normal_1).png" height="100%" width="33%" />
             <img src="./Data%20Visualizations/Normalization%20(quantile_normal_2).png" height="100%" width="30%" />
             <img src="./Data%20Visualizations/Normalization%20(quantile_normal_3).png" height="100%" width="30%" />
         </p>
 
-    * Normalization = `log_then_zscore`
+    * **`log_then_zscore`**
 
-        **Text HERE!!!!!**
-        <!-- | | | |
-        |---|---|---|
-        | ![](/Data%20Visualizations/Normalization%20(log_then_zscore_1).png) | ![](/Data%20Visualizations/Normalization%20(log_then_zscore_2).png) | ![](/Data%20Visualizations/Normalization%20(log_then_zscore_3).png) | -->
+        $x_1 = log(1 + x)$, then $x' = \frac{x_1 - \mu}{\sigma}$. First reduces skew, then standardizes scale so models see balanced feature ranges.
         <p>
             <img src="./Data%20Visualizations/Normalization%20(log_then_zscore_1).png" height="100%" width="33%" />
             <img src="./Data%20Visualizations/Normalization%20(log_then_zscore_2).png" height="100%" width="30%" />
             <img src="./Data%20Visualizations/Normalization%20(log_then_zscore_3).png" height="100%" width="30%" />
         </p>
 
-    * Summary
+    * **Summary**
 
         | Method          | Accuracy      | Macro F1      |
         | --------------- | ------------- | ------------- |
@@ -314,16 +287,23 @@ This project trains a supervised model to predict a person's financial group (`C
         | square          | 0.999167      | 0.999159      |
         | inverse         | 0.998958      | 0.998954      |
 
-        Normalization: BEST = `sqrt` (acc = `0.9998` and macro_f1 = `0.9998`)
-
-        `sqrt` is a good choice here as:
-
-        * Engineered features are mostly non-negative and skewed.
-        * Sqrt reduces skew without being as aggressive as log.
+        **Normalization:** BEST = `sqrt` (acc = `0.9998` and macro_f1 = `0.9998`)
 
     7.2 **Regularization (best = L2)**
 
-    * Summary
+    * **L1 (Lasso)**
+
+        Minimizes $L + \lambda||W||_1$. Encourages sparse weights (some go exactly to $0$), acting like built-in feature selection.
+
+    * **L2 (Ridge)**
+
+        Minimizes $L + \lambda||W||_2^2$. Shrinks weights to reduce overfitting and improve stability under correlated features. It also helps keeping intermediate comparisons stable and reduces noise filtering in early stages.
+
+    * **Elastic Net**
+
+        Minimizes $L + \lambda(\alpha||w||_1 + (1 - \alpha)||w||_2^2)$. Mixes sparsity (L1) with stability (L2), often better when many features correlate.
+
+    * **Summary**
 
         | Penalty    | C   | L1_Ratio | Accuracy | Macro F1 |
         | ---------- | --- | -------- | -------- | -------- |
@@ -331,47 +311,38 @@ This project trains a supervised model to predict a person's financial group (`C
         | l1         | 1.0 | 0.5      | 0.999583 | 0.999577 |
         | elasticnet | 1.0 | 0.5      | 0.999542 | 0.999536 |
 
-        Regularization: BEST = `l2` (params = `{'C': 1.0}`, acc = `0.9998`, and macro_f1 = `0.9998`)
+        **Regularization:** BEST = `l2` (params = `{'C': 1.0}`, acc = `0.9998`, and macro_f1 = `0.9998`)
 
     7.3 **Outlier Detection (best = `none`)**
 
-    * Outlier method = `none`
+    * **`none`**
 
-        **Text HERE!!!!!**
-        <!-- | | | |
-        |---|---|---|
-        | ![](/Data%20Visualizations/Outlier%20Method%20(none_1).png) | ![](/Data%20Visualizations/Outlier%20Method%20(none_2).png) | ![](/Data%20Visualizations/Outlier%20Method%20(none_3).png) | -->
+        No outlier handling: $x' = x$. Keeps full variance, but extreme synthetic/rare months can distort scaling and model boundaries. Since the dataset is synthetic and already constraint-aware, some outliers are already meaningful indications (e.g., rare high debt months).
         <p>
             <img src="./Data%20Visualizations/Outlier%20Method%20(none_1).png" height="100%" width="33%" />
             <img src="./Data%20Visualizations/Outlier%20Method%20(none_2).png" height="100%" width="30%" />
             <img src="./Data%20Visualizations/Outlier%20Method%20(none_3).png" height="100%" width="30%" />
         </p>
 
-    * Outlier method = `iqr`
+    * **`iqr`**
 
-        **Text HERE!!!!!**
-        <!-- | | | |
-        |---|---|---|
-        | ![](/Data%20Visualizations/Outlier%20Method%20(iqr_1).png) | ![](/Data%20Visualizations/Outlier%20Method%20(iqr_2).png) | ![](/Data%20Visualizations/Outlier%20Method%20(iqr_3).png) | -->
+        Flag points outside $[Q_1 - k \cdot IQR, Q_3 + k \cdot IQR]$ where $IQR = Q_3 - Q_1$. The method is efficient for skewed data and could be used for clipping extreme spending months.
         <p>
             <img src="./Data%20Visualizations/Outlier%20Method%20(iqr_1).png" height="100%" width="33%" />
             <img src="./Data%20Visualizations/Outlier%20Method%20(iqr_2).png" height="100%" width="30%" />
             <img src="./Data%20Visualizations/Outlier%20Method%20(iqr_3).png" height="100%" width="30%" />
         </p>
 
-    * Outlier method = `mad`
+    * **`mad`**
 
-        **Text HERE!!!!!**
-        <!-- | | | |
-        |---|---|---|
-        | ![](/Data%20Visualizations/Outlier%20Method%20(mad_1).png) | ![](/Data%20Visualizations/Outlier%20Method%20(mad_2).png) | ![](/Data%20Visualizations/Outlier%20Method%20(mad_3).png) | -->
+        Compute $MAD = median(|x - median(x)|)$ and use a robust z-score $z = \frac{0.6745(x - median)}{MAD}$. Strongly resistant to heavy tails and works well when means/std are unreliable.
         <p>
             <img src="./Data%20Visualizations/Outlier%20Method%20(mad_1).png" height="100%" width="33%" />
             <img src="./Data%20Visualizations/Outlier%20Method%20(mad_2).png" height="100%" width="30%" />
             <img src="./Data%20Visualizations/Outlier%20Method%20(mad_3).png" height="100%" width="30%" />
         </p>
 
-    * Summary
+    * **Summary**
 
         | Outlier Method | Accuracy | Macro F1 |
         | -------------- | -------- | -------- |
@@ -379,24 +350,24 @@ This project trains a supervised model to predict a person's financial group (`C
         | mad            | 0.999708 | 0.999707 |
         | iqr            | 0.999625 | 0.999622 |
 
-        Outlier Method: BEST = `none` (acc = `0.9998` and macro_f1 = `0.9998`)
+        **Outlier Method:** BEST = `none` (acc = `0.9998` and macro_f1 = `0.9998`)
 
     7.4 **Feature Selection (best = `heatmap_drop`)**
 
-    * Heatmap correlation (Heatmap-drop eval: acc = `0.9922` and macro_f1 = `0.9923`)
+    * **Heatmap correlation**
 
-        **Text HERE!!!!!**
-        <!-- | | |
-        |---|---|
-        | ![](/Data%20Visualizations/Feature%20Selection%20(heatmap_correlation_1).png) | ![](/Data%20Visualizations/Feature%20Selection%20(heatmap_correlation_2).png) | -->
+        Uses correlation $r_{ij}$ to drop redundant features (e.g., remove one of a highly correlated pair). Helps prevent double counting the same spending signal. Since aggregated share/rate features can be highly correlated, dropping them often improves generalization.
         <p>
             <img src="./Data%20Visualizations/Feature%20Selection%20(heatmap_correlation_1).png" height="100%" width="46%" />
             <img src="./Data%20Visualizations/Feature%20Selection%20(heatmap_correlation_2).png" height="100%" width="46%" />
         </p>
 
-    * VIF (VIF-drop eval: acc = `0.6399` and macro_f1 = `0.6377`)
+        **Heatmap-drop eval:** acc = `0.9922` and macro_f1 = `0.9923`
 
-        **Text HERE!!!!!**
+    * **VIF**
+
+        $VIF_i = \frac{1}{1 - R_i^2}$, where $R_i^2$ is from regressing feature $i$ on others. Large VIF indicates multicollinearity, which can destabilize linear models and inflate variance.
+
         | Feature                                | VIF         |
         | -------------------------------------- | ----------- |
         | Debt_Payments__share__mean             | inf         |
@@ -415,69 +386,62 @@ This project trains a supervised model to predict a person's financial group (`C
         | Pets__share__std	                     | 137.943165  |
         | Groceries_FoodAtHome__share__median	 | 110.582508  |
 
+        **VIF-drop eval:** acc = `0.6399` and macro_f1 = `0.6377`
 
-    * Confusion-matrix entropy (Entropy-selected eval: acc = `0.6399` and macro_f1 = `0.6377`)
+    * **Confusion-matrix entropy**
 
-        Entropy-wrapper baseline: score = `0.3774`, f1 = `0.6377`, and ent = `1.0413` (features = `13`)
-        Entropy-wrapper final feature count: `13`
+        Compute entropy $H = -\sum_kp_klogp_k$ from a model's confusion behavior (or per-feature ablations). Lower entropy typically means clearer class separation; used to keep features that reduce ambiguity across clusters.
 
-    * Summary
+        * Entropy-wrapper baseline: score = `0.3774`, f1 = `0.6377`, and ent = `1.0413` (features = `13`)
+        * Entropy-wrapper final feature count: `13`
 
-        Feature Selection: BEST feature set = `heatmap_drop` (acc = `0.9922`, macro_f1 = `0.9923`, and features = `37`)
+        **Entropy-selected eval:** acc = `0.6399` and macro_f1 = `0.6377`
+
+    * **Summary**
 
         ![](/Data%20Visualizations/Feature%20Selection%20(summary).png)
 
+        **Feature Selection:** BEST feature set = `heatmap_drop` (acc = `0.9922`, macro_f1 = `0.9923`, and features = `37`)
+
     7.5 **Scaling (best = `robust`)**
 
-    * Scaling = `none`
+    * **`none`**
 
-        **Text HERE!!!!!**
-        <!-- | | | |
-        |---|---|---|
-        | ![](/Data%20Visualizations/Scaling%20(none_1).png) | ![](/Data%20Visualizations/Scaling%20(none_2).png) | ![](/Data%20Visualizations/Scaling%20(none_3).png) | -->
+        No scaling: $x' = x$. Tree models often tolerate this, but distance/gradient-based methods (`MLP`, `logistic`) can suffer.
         <p>
             <img src="./Data%20Visualizations/Scaling%20(none_1).png" height="100%" width="33%" />
             <img src="./Data%20Visualizations/Scaling%20(none_2).png" height="100%" width="28.5%" />
             <img src="./Data%20Visualizations/Scaling%20(none_3).png" height="100%" width="28.5%" />
         </p>
 
-    * Scaling = `zscore`
+    * **`zscore`**
 
-        **Text HERE!!!!!**
-        <!-- | | | |
-        |---|---|---|
-        | ![](/Data%20Visualizations/Scaling%20(zscore_1).png) | ![](/Data%20Visualizations/Scaling%20(zscore_2).png) | ![](/Data%20Visualizations/Scaling%20(zscore_3).png) | -->
+        $x' = \frac{x - \mu}{\sigma}$. Makes features comparable in variance, improving optimization for gradient-based models.
         <p>
             <img src="./Data%20Visualizations/Scaling%20(zscore_1).png" height="100%" width="33%" />
             <img src="./Data%20Visualizations/Scaling%20(zscore_2).png" height="100%" width="28.5%" />
             <img src="./Data%20Visualizations/Scaling%20(zscore_3).png" height="100%" width="28.5%" />
         </p>
 
-    * Scaling = `robust`
+    * **`robust`**
 
-        **Text HERE!!!!!**
-        <!-- | | | |
-        |---|---|---|
-        | ![](/Data%20Visualizations/Scaling%20(robust_1).png) | ![](/Data%20Visualizations/Scaling%20(robust_2).png) | ![](/Data%20Visualizations/Scaling%20(robust_3).png) | -->
+        $x' = \frac{x - median}{IQR}$. Similar to `z-score` but resistant to outliers; good for spending data with occasional spikes. Since it is less sensitive to heavy tails than `z-score` scaling, it works well when some features have occasional spikes.
         <p>
             <img src="./Data%20Visualizations/Scaling%20(robust_1).png" height="100%" width="33%" />
             <img src="./Data%20Visualizations/Scaling%20(robust_2).png" height="100%" width="28.5%" />
             <img src="./Data%20Visualizations/Scaling%20(robust_3).png" height="100%" width="28.5%" />
         </p>
 
-    * Scaling = `minmax`
+    * **`minmax`**
 
-        **Text HERE!!!!!**
-        <!-- | | | |
-        |---|---|---|
-        | ![](/Data%20Visualizations/Scaling%20(minmax_1).png) | ![](/Data%20Visualizations/Scaling%20(minmax_2).png) | ![](/Data%20Visualizations/Scaling%20(minmax_3).png) | -->
+        $x' = \frac{x - min}{max - min}$. Forces features into $[0, 1]$; sensitive to outliers because $min / max$ can be extreme.
         <p>
             <img src="./Data%20Visualizations/Scaling%20(minmax_1).png" height="100%" width="33%" />
             <img src="./Data%20Visualizations/Scaling%20(minmax_2).png" height="100%" width="28.5%" />
             <img src="./Data%20Visualizations/Scaling%20(minmax_3).png" height="100%" width="28.5%" />
         </p>
 
-    * Summary
+    * **Summary**
 
         | Scaler | Accuracy | Macro F1 |
         | ------ | -------- | -------- |
@@ -486,47 +450,38 @@ This project trains a supervised model to predict a person's financial group (`C
         | minmax | 0.975667 | 0.975786 |
         | none   | 0.943042 | 0.943272 |
 
-        Scaling: BEST = `robust` (acc = `0.9927` and macro_f1 = `0.9927`)
+        **Scaling:** BEST = `robust` (acc = `0.9927` and macro_f1 = `0.9927`)
 
     7.6 **Standardization (best = `none`)**
 
-    * Standardization = `none`
+    * **`none`**
 
-        **Text HERE!!!!!**
-        <!-- | | | |
-        |---|---|---|
-        | ![](/Data%20Visualizations/Standardization%20(none_1).png) | ![](/Data%20Visualizations/Standardization%20(none_2).png) | ![](/Data%20Visualizations/Standardization%20(none_3).png) | -->
+        No row-wise normalization. Preserves absolute magnitude differences between people/months. Since the data has already been normalized and scaled, there is no extra need for additional standardization in this case. Moreover, since the best model is tree-based and trees do not need standardized inputs.
         <p>
             <img src="./Data%20Visualizations/Standardization%20(none_1).png" height="100%" width="33%" />
             <img src="./Data%20Visualizations/Standardization%20(none_2).png" height="100%" width="28.5%" />
             <img src="./Data%20Visualizations/Standardization%20(none_3).png" height="100%" width="28.5%" />
         </p>
 
-    * Standardization = `l2`
+    * **`l2`**
 
-        **Text HERE!!!!!**
-        <!-- | | | |
-        |---|---|---|
-        | ![](/Data%20Visualizations/Standardization%20(l2_1).png) | ![](/Data%20Visualizations/Standardization%20(l2_2).png) | ![](/Data%20Visualizations/Standardization%20(l2_3).png) | -->
+        $x' = \frac{x}{||x||_2}$. Makes each row have unit Euclidean length, emphasizing composition (spend mix) over total scale.
         <p>
             <img src="./Data%20Visualizations/Standardization%20(l2_1).png" height="100%" width="33%" />
             <img src="./Data%20Visualizations/Standardization%20(l2_2).png" height="100%" width="28.5%" />
             <img src="./Data%20Visualizations/Standardization%20(l2_3).png" height="100%" width="28.5%" />
         </p>
 
-    * Standardization = `l1`
+    * **`l1`**
 
-        **Text HERE!!!!!**
-        <!-- | | | |
-        |---|---|---|
-        | ![](/Data%20Visualizations/Standardization%20(l1_1).png) | ![](/Data%20Visualizations/Standardization%20(l1_2).png) | ![](/Data%20Visualizations/Standardization%20(l1_3).png) | -->
+        $x' = \frac{x}{||x||_1}$. Makes each row sum to $1$, turning values into proportions; very interpretable for budget-share features.
         <p>
             <img src="./Data%20Visualizations/Standardization%20(l1_1).png" height="100%" width="33%" />
             <img src="./Data%20Visualizations/Standardization%20(l1_2).png" height="100%" width="28.5%" />
             <img src="./Data%20Visualizations/Standardization%20(l1_3).png" height="100%" width="28.5%" />
         </p>
 
-    * Summary
+    * **Summary**
 
         | Standardization | Accuracy | Macro F1 |
         | --------------- | -------- | -------- |
@@ -534,11 +489,27 @@ This project trains a supervised model to predict a person's financial group (`C
         | l2              | 0.966458 | 0.966387 |
         | l1              | 0.920958 | 0.921226 |
 
-        Standardization BEST = `none` (acc = `0.9927` and macro_f1 = `0.9927`)
+        **Standardization:** BEST = `none` (acc = `0.9927` and macro_f1 = `0.9927`)
 
     7.7 **Sampling (best = `SMOTE`)**
 
-    * Summary
+    * **`none`**
+
+        Keeps the natural class distribution. Best when the training set is already balanced or need a realistic frequency behavior.
+
+    * **`SMOTE`**
+
+        Creates synthetic minority examples by interpolation: $x_{new} = x + \alpha(x_{nn} - x)$. Reduces class imbalance without duplicating points, often improving boundary learning. It also reduces bias toward majority clusters and can improve decision boundaries on tabular data when minority classes are underrepresented.
+
+    * **`SMOTEENN`**
+
+        `SMOTE` oversampling with Edited Nearest Neighbors cleaning. Adds minority samples, then removes ambiguous/noisy points near class overlaps to sharpen boundaries.
+
+    * **`UnderSample`**
+
+        Randomly removes samples from majority classes. Fast and simple, but can discard useful variety and shrink decision coverage.
+
+    * **Summary**
 
         | Sampler     | Accuracy | Macro F1 |
         | ----------- | -------- | -------- |
@@ -547,35 +518,147 @@ This project trains a supervised model to predict a person's financial group (`C
         | none        | 0.992708 | 0.992746 |
         | SMOTEENN    | 0.979708 | 0.979812 |
 
-        Sampling: BEST = `SMOTE` (acc = `0.9930` and macro_f1 = `0.9930`)
+        **Sampling:** BEST = `SMOTE` (acc = `0.9930` and macro_f1 = `0.9930`)
 
 8. **Model training**
 
     Models trained:
-    * Logistic Regression
-    * Random Forest
-    * ExtraTrees
-    * XGBoost (BEST model with `macro_f1 = 0.9620`)
-    * MLP
+    * **Logistic Regression**
 
-    Why XGBoost:
-    * Excellent on tabular and mixed-signal feature sets
-    * Captures non-linear thresholds; therefoe, cases like "savings rate high with housing share low become possible
-    * Strong performance without needing deep feature scaling
+        Learns linear decision boundaries with $p(y = k|x) = softmax(Wx + b)$. Strong baseline: fast, interpretable, but limited when clusters are non-linear.
+
+        **LR results:** acc = `0.9930` and macro_f1 = `0.9930`
+
+        |              | Precision | Recall  | F1-Score | Support  |
+        | ------------ | --------- | ------- | -------- | -------- |
+        | 0            | 0.998     | 0.997   | 0.997    | 4082     |
+        | 1            | 0.985     | 0.989   | 0.987    | 4010     |
+        | 2            | 0.989     | 0.986   | 0.987    | 4109     |
+        | 3            | 0.994     | 0.995   | 0.994    | 3939     |
+        | 4            | 0.993     | 0.996   | 0.995    | 3958     |
+        | 5            | 0.999     | 0.995   | 0.997    | 3902     |
+        |              |           |         |          |          |
+        | accuracy     |           |         | 0.993    | 24000    |
+        | macro avg    | 0.993     | 0.993   | 0.993    | 24000    |
+        | weighted avg | 0.993     | 0.993   | 0.993    | 24000    |
+
+        ![](/Data%20Visualizations/Model%20(logistic_regression).png)
+
+    * **Random Forest**
+
+        Ensemble of bootstrapped decision trees with feature randomness. Captures non-linear interactions, but can be less sharp than boosted methods.
+
+        **RandomForest results:** acc = `0.9956` and macro_f1 = `0.9956`
+
+        |              | Precision | Recall  | F1-Score | Support  |
+        | ------------ | --------- | ------- | -------- | -------- |
+        | 0            | 0.998     | 0.999   | 0.998    | 4082     |
+        | 1            | 0.988     | 0.997   | 0.992    | 4010     |
+        | 2            | 0.995     | 0.989   | 0.992    | 4109     |
+        | 3            | 0.996     | 0.996   | 0.996    | 3939     |
+        | 4            | 0.997     | 0.996   | 0.997    | 3958     |
+        | 5            | 1.000     | 0.997   | 0.998    | 3902     |
+        |              |           |         |          |          |
+        | accuracy     |           |         | 0.996    | 24000    |
+        | macro avg    | 0.996     | 0.996   | 0.996    | 24000    |
+        | weighted avg | 0.996     | 0.996   | 0.996    | 24000    |
+
+        ![](/Data%20Visualizations/Model%20(RandomForest).png)
+
+    * **ExtraTrees**
+
+        Like Random Forest, but splits are more randomized. Often reduces variance and trains faster, sometimes at the cost of slightly higher bias.
+
+        **ExtraTrees results:** acc = `0.9952` and macro_f1 = `0.9952`
+
+        |              | Precision | Recall  | F1-Score | Support  |
+        | ------------ | --------- | ------- | -------- | -------- |
+        | 0            | 0.999     | 0.993   | 0.996    | 4082     |
+        | 1            | 0.984     | 0.995   | 0.989    | 4010     |
+        | 2            | 0.995     | 0.990   | 0.993    | 4109     |
+        | 3            | 0.997     | 0.998   | 0.998    | 3939     |
+        | 4            | 0.997     | 0.998   | 0.997    | 3958     |
+        | 5            | 1.000     | 0.997   | 0.998    | 3902     |
+        |              |           |         |          |          |
+        | accuracy     |           |         | 0.995    | 24000    |
+        | macro avg    | 0.995     | 0.995   | 0.995    | 24000    |
+        | weighted avg | 0.995     | 0.995   | 0.995    | 24000    |
+
+        ![](/Data%20Visualizations/Model%20(ExtraTrees).png)
+
+    * **XGBoost (BEST)**
+
+        Gradient-boosted trees: $F_t(x) = F_{t - 1}(x) + \eta f_t(x)$. Typically excels on tabular data by iteratively correcting errors and modeling complex feature interactions. This model performs excellent on tabular and mixed-signal feature sets. Thus, it will capture non-linear thresholds (e.g., savings rate high with housing share low) and perform well without needing deep feature scaling.
+
+        **XGBoost results:** acc = `0.9960` and macro_f1 = `0.9961`
+
+        |              | Precision | Recall  | F1-Score | Support  |
+        | ------------ | --------- | ------- | -------- | -------- |
+        | 0            | 0.998     | 0.998   | 0.998    | 4082     |
+        | 1            | 0.989     | 0.995   | 0.992    | 4010     |
+        | 2            | 0.996     | 0.991   | 0.993    | 4109     |
+        | 3            | 0.997     | 0.997   | 0.997    | 3939     |
+        | 4            | 0.997     | 0.997   | 0.997    | 3958     |
+        | 5            | 1.000     | 0.997   | 0.999    | 3902     |
+        |              |           |         |          |          |
+        | accuracy     |           |         | 0.996    | 24000    |
+        | macro avg    | 0.996     | 0.996   | 0.996    | 24000    |
+        | weighted avg | 0.996     | 0.996   | 0.996    | 24000    |
+
+        ![](/Data%20Visualizations/Model%20(XGBoost).png)
+
+    * **MLP**
+
+        A feed-forward neural network trained by backpropagation. Can fit complex patterns but needs careful scaling/regularization and is more sensitive to dataset than tree boosting.
+
+        **MLP results:** acc = `0.9960` and macro_f1 = `0.9960`
+
+        |              | Precision | Recall  | F1-Score | Support  |
+        | ------------ | --------- | ------- | -------- | -------- |
+        | 0            | 0.998     | 0.998   | 0.998    | 4082     |
+        | 1            | 0.989     | 0.995   | 0.992    | 4010     |
+        | 2            | 0.994     | 0.990   | 0.992    | 4109     |
+        | 3            | 0.998     | 0.996   | 0.997    | 3939     |
+        | 4            | 0.997     | 0.998   | 0.997    | 3958     |
+        | 5            | 0.999     | 0.998   | 0.999    | 3902     |
+        |              |           |         |          |          |
+        | accuracy     |           |         | 0.996    | 24000    |
+        | macro avg    | 0.996     | 0.996   | 0.996    | 24000    |
+        | weighted avg | 0.996     | 0.996   | 0.996    | 24000    |
+
+        ![](/Data%20Visualizations/Model%20(MLP).png)
+
+    * **Summary**
+
+        | Model        | Accuracy | Macro F1 |
+        | ------------ | -------- | -------- |
+        | xgboost      | 0.996042 | 0.996066 |
+        | mlp          | 0.995958 | 0.995986 |
+        | randomforest | 0.995583 | 0.995608 |
+        | extratrees   | 0.995167 | 0.995207 |
+        | lr           | 0.993000 | 0.993039 |
+
+        <p>
+            <img src="./Data%20Visualizations/Model%20(best_1).png" height="100%" width="46%" />
+            <img src="./Data%20Visualizations/Model%20(best_2).png" height="100%" width="46%" />
+        </p>
+
+        **Model:** BEST MODEL = `xgboost` (acc = `0.9960` and macro_f1 = `0.9961`)
 
 9. **Saving artifacts**
 
     Once the best pipeline configuration is selected, the notebook writes everything needed for consistent inference:
 
-    * `best_cluster_model.pkl` - the trained classifier (XGBoost)
-    * `feature_cols.json` - exact feature column order expected by the model
-    * `pipeline_config.json` - selected preprocessing choices with key parameters
-    * `norm_obj.pkl` - normalization transform object
-    * `scaler_obj.pkl` - scaling object (robust)
-    * `standardization_obj.pkl` - none in the chosen run, but still saved for consistency
-    * `outlier_bounds.pkl` - bounds used for probe generation and clipping logic
+    * `best_cluster_model.pkl` - trained classifier (`XGBoost` used as a final model in production)
+    * `feature_cols.json` - feature column order expected by the model
+    * `pipeline_config.json` - selected preprocessing choices with key parameters (`norm` / `scaling` / `selection` / etc.)
+    * `outlier_bounds.pkl` - per-feature bounds used by the outlier step (`IQR` / `MAD`),  or identity if none
+    * `norm_obj.pkl` - normalization transform object, or identity if none
+    * `standardization_obj.pkl` - `L1` / `L2` / `none` standardizer,  or identity if none
+    * `scaler_obj.pkl` - scaling transform (`robust`/`minmax`/`zscore`/`none`)
+    * `sampler_obj.pkl` - the resampling strategy used during training (`SMOTE`, `SMOTEENN`, `UnderSample`, or identity for none)
 
-    These artifacts are saved for backend (`predict_api.py`) to guarantee that training transforms is inference transforms.
+    These artifacts are saved for backend (`predict_api.py`).
 
 10. **Cluster space clouds**
 
@@ -585,16 +668,50 @@ This project trains a supervised model to predict a person's financial group (`C
     * `cluster_space_cache.joblib`
     * `cluster_space_cache.json`
 
-    Those files are used by the frontend to show cluster regions without recomputing projections every time.
+    Those files are used by the frontend to show cluster regions without recomputing projections every time. The clusters space clouds in frontend do not look like clusters right after training as:
+
+    * It is a 2D PCA projection of a high-dimensional space; thus, even if clusters are separable in $10$–$50$ dimensions, PCA(2) can squash that separation as PCA preserves variance, not class separation.
+    * Cloud points are synthetic and a cache builder samples features broadly, often uniformly within bounds.
+    * The model's boundaries are likely nonlinear; therefore, since the classifier is tree-based (`XGBoost`), the decision regions can be complex in high-dimensional space.
+    * The clusters are income tiers, meanwhile the features are ratios/shares. Ratios (shares of income) often overlap across tiers. For example, someone at $3,000/mo and $6,000/mo can have very similar shares, so the features can legitimately overlap.
+
+    ![](/Data%20Visualizations/Model%20(cluster_space).png)
 
 11. **Verification & Testing**
 
-    Finally, the notebook includes behavioral tests that go beyond standard train/test metrics:
+    Finally, the notebook (and `model_test.ipynb`) includes behavioral tests that go beyond standard train/test metrics:
 
     * **One-month test:** feeds a single month and verifies that the model still produces a reasonable cluster distribution with warnings that single-month inputs are inherently less stable.
 
     * **6-month behavior timeline:** simulates short sequences to confirm the prediction responds to sustained behavior rather than one anomaly.
 
+        Table 1: Single-month prediction with rates
+
+        | month | SavingsRate | NetCashflowRate | pred_single_month | top_prob_% | p_C1_low | p_C2_lower_mid | p_C3_mid | p_C4_upper_mid | p_C5_high | p_C6_top5 |
+        | :---: | :---------: | :-------------: | :---------------: | :--------: | :------: | :------------: | :------: | :------------: | :-------: | :-------: |
+        |   1   |   0.133333  |     0.143333    |    C2_lower_mid   |  81.103020 | 0.001928 |    0.811030    | 0.014249 |    0.056035    |  0.008090 |  0.108669 |
+        |   2   |   0.150000  |     0.131667    |    C2_lower_mid   |  81.552383 | 0.002057 |    0.815524    | 0.013991 |    0.056058    |  0.008216 |  0.104154 |
+        |   3   |   0.166667  |     0.120000    |    C2_lower_mid   |  81.916595 | 0.002104 |    0.819166    | 0.013936 |    0.055986    |  0.008447 |  0.100361 |
+        |   4   |   0.183333  |     0.108333    |    C2_lower_mid   |  81.526527 | 0.002661 |    0.815265    | 0.013253 |    0.061350    |  0.008343 |  0.099128 |
+        |   5   |   0.200000  |     0.096667    |    C2_lower_mid   |  82.131279 | 0.004506 |    0.821313    | 0.013425 |    0.048137    |  0.008577 |  0.104041 |
+        |   6   |   0.216667  |     0.085000    |    C2_lower_mid   |  82.481873 | 0.005593 |    0.824819    | 0.010473 |    0.047646    |  0.008490 |  0.102980 |
+
+        Table 2: Timeline prediction (cumulative months 1..t)
+
+        | months_used | pred_index |   pred_name  | top_prob_% | p_C1_low | p_C2_lower_mid | p_C3_mid | p_C4_upper_mid | p_C5_high | p_C6_top5 |
+        | :---------: | :--------: | :----------: | :--------: | :------: | :------------: | :------: | :------------: | :-------: | :-------: |
+        |      1      |      1     | C2_lower_mid |  81.103020 | 0.001928 |    0.811030    | 0.014249 |    0.056035    |  0.008090 |  0.108669 |
+        |      2      |      1     | C2_lower_mid |  81.433777 | 0.002054 |    0.814338    | 0.013971 |    0.055976    |  0.008092 |  0.105569 |
+        |      3      |      1     | C2_lower_mid |  81.552383 | 0.002057 |    0.815524    | 0.013991 |    0.056058    |  0.008216 |  0.104154 |
+        |      4      |      1     | C2_lower_mid |  82.005539 | 0.002031 |    0.820055    | 0.014038 |    0.055360    |  0.008268 |  0.100247 |
+        |      5      |      1     | C2_lower_mid |  81.916595 | 0.002104 |    0.819166    | 0.013936 |    0.055986    |  0.008447 |  0.100361 |
+        |      6      |      1     | C2_lower_mid |  81.541512 | 0.002217 |    0.815415    | 0.013516 |    0.061361    |  0.008344 |  0.099146 |
+
+        ![](/Data%20Visualizations/Model%20(6_month_test).png)
+
     * **48-month what-if transition (C1 → C4):** use a heuristic blending function that gradually morphs spending shares from one cluster's profile to another and confirms the model transitions across clusters over time instead of snapping randomly.
+
+        ![](/Data%20Visualizations/Model%20(48_month_test).png)
+        ![](/Data%20Visualizations/Model%20(48_month_test_radar).png)
 
     These tests are vital since the app is meant to behave like a personal dynamic financial trajectory estimation tool and not just a static classifier.
