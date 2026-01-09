@@ -155,11 +155,7 @@ This project trains a supervised model to predict a person's financial group (`C
     Month-level engineered features (baseline eval (LR): acc = `0.9997` and macro_f1= `0.9997`)
 
     * For each month $t$ and category $c$:
-        * Share of income:
-
-        $$
-        share_{c,t} = \frac{outflow_{c,t}}{income_t}
-        $$
+        * Share of income: $share_{c,t} = \frac{outflow_{c,t}}{income_t}$
 
         * Rates:
             * `TotalOutflowRate = TotalOutflows / Income`
