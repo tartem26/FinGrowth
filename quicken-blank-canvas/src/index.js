@@ -419,7 +419,8 @@ turtle.logPenStatus = function () {
 turtle._clampToCanvas = function (nx, ny) {
     if (!canvas) return { x: nx, y: ny };
 
-    // keep the turtle marker inside the canvas area
+    // keep the turtle marker inside the canvas area (only for kochSnowflake
+    // and hilbert to compare with hexagon / drawStar)
     const margin = 2; // small margin (set to 0 if need an exact edge)
     const x = Math.max(margin, Math.min(canvas.width - margin, nx));
     const y = Math.max(margin, Math.min(canvas.height - margin, ny));

@@ -730,7 +730,7 @@ This project trains a supervised model to predict a person's financial group (`C
 
     Those files are used by the frontend to show cluster regions without recomputing projections every time. The cluster space clouds in the frontend do not look like clusters right after training, as:
 
-    * It is a 2D PCA projection of a high-dimensional space; thus, even if clusters are separable in $10$–$50$ dimensions, PCA(2) can squash that separation as PCA preserves variance, not class separation.
+    * It is a 2D PCA projection of a high-dimensional space; thus, even if clusters are separable in 10–50 dimensions, PCA(2) can squash that separation as PCA preserves variance, not class separation.
     * Cloud points are synthetic and a cache builder samples features broadly, often uniformly within bounds.
     * The model's boundaries are likely nonlinear; therefore, since the classifier is tree-based (`XGBoost`), the decision regions can be complex in high-dimensional space.
     * The clusters are income tiers, meanwhile the features are ratios/shares. Ratios (shares of income) often overlap across tiers. For example, someone at $3,000/mo and $6,000/mo can have very similar shares, so the features can legitimately overlap.
